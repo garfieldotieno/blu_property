@@ -1,0 +1,46 @@
+# Ignore Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Ignore environment files
+env/
+venv/
+.venv/
+*.env
+
+# Ignore VSCode settings
+.vscode/
+
+# Ignore any log files
+*.log
+
+# Ignore compiled Python files
+*.pyc
+
+# Ignore database file
+db.json
+
+# Ignore static files generated during the build process
+static/node_modules/
+static/node_modules/*
+
+# Ignore anything in the templates directory
+templates/
+
+# Ignore any macOS system files
+.DS_Store
+
+# Ignore IDE-specific directories or files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Ignore any archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Ignore any build artifacts
+build/
+dist/

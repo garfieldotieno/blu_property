@@ -1,0 +1,147 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: url('../images/blu_property_sample_1.jpg') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #E6B41E;
+    color: white;
+    height: 50px;
+}
+
+.brand {
+    font-size: 24px;
+    font-weight: bold;
+    color: #172A62;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 100px); /* Adjust based on navbar height */
+}
+
+.square-container {
+    display: flex;
+    padding: 32px;
+    gap: 100px;
+    width: 1000px;
+    background-color: #FDC621;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    transition: flex-direction 0.3s ease; /* Smooth transition for layout change */
+}
+
+/* Augmented .square class */
+.square {
+    flex: 1; /* Allow square to grow and shrink as needed */
+    max-width: 350px;
+    max-height: 350px;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensures content does not overflow */
+    background-color: white;
+    transition: transform 0.3s ease; /* Smooth transition for scaling */
+    margin: 10px;
+}
+
+.square img {
+    border-radius: 10px;
+    width: 80%;
+    height: 80%;
+    object-fit: cover; /* Ensures the image covers the div while maintaining its aspect ratio */
+}
+
+.right-square {
+    width: 420px;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensures content does not overflow */
+    background-color: white;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Space between buttons */
+    align-items: center; /* Center align buttons horizontally */
+    padding: 20px; /* Adds padding around the button container */
+}
+
+.button {
+    width: 360px; /* Same width as image */
+    height: 60px;
+    background-color: #172A62;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bolder;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button:hover {
+    background-color: #2C3D70;
+}
+
+/* Media query for screen widths less than 777px */
+@media (max-width: 777px) {
+
+    .container {
+        padding: 16px;
+    }
+
+    .square-container {
+        flex-direction: column;
+        height: auto; /* Adjust height to fit content */
+        width: 90%; /* Adjust width to fit smaller screens */
+        gap:20px
+        
+    }
+
+    .square {
+        width: 90%; /* Adjusts the width to fit smaller screens */
+        height: auto; /* Adjusts the height based on content */
+        margin-bottom: 20px; /* Adds space between squares */
+    }
+
+    .right-square {
+        width: 90%; /* Adjust the width to fit smaller screens */
+        height: auto;
+        margin-bottom: 20px;
+    }
+
+    .square img {
+        width: 100%; /* Scale image to fit the smaller square */
+        height: auto;
+    }
+
+    .button-container {
+        width: 100%; /* Ensure button container takes full width */
+    }
+
+    .button {
+        width: 100%; /* Adjust button width for smaller screens */
+    }
+}
