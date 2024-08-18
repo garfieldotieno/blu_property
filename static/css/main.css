@@ -105,6 +105,42 @@ body {
     background-color: #2C3D70;
 }
 
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding-bottom: 16px;
+}
+
+.form-container input {
+    width: 360px; /* Match the width of the buttons */
+    height: 60px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-container input:focus {
+    border-color: #172A62;
+    box-shadow: 0 0 10px rgba(23, 42, 98, 0.5);
+}
+
+.form-container input::placeholder {
+    color: #aaa;
+    font-style: normal;
+    text-align: center  ;
+}
+
+.form-container p {
+    margin: 32px;
+}
+
+
 /* Media query for screen widths less than 777px */
 @media (max-width: 777px) {
 
@@ -127,7 +163,7 @@ body {
     }
 
     .right-square {
-        width: 90%; /* Adjust the width to fit smaller screens */
+        width: 100%; /* Adjust the width to fit smaller screens */
         height: auto;
         margin-bottom: 20px;
     }
@@ -143,5 +179,13 @@ body {
 
     .button {
         width: 100%; /* Adjust button width for smaller screens */
+    }
+
+    .form-container {
+        width: 100%;
+    }
+
+    .form-container h4 {
+        width: 90%;
     }
 }
