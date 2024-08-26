@@ -23,7 +23,9 @@ body {
 .brand {
     font-size: 24px;
     font-weight: bold;
-    color: #172A62;
+    color: #172A62; /* Example color */
+    text-decoration: none; /* Remove underline from link */
+    margin-right: auto; /* Ensure space between brand and logout button */
 }
 
 .brand:hover {
@@ -113,6 +115,35 @@ body {
     cursor: pointer;
     transition: background-color 0.3s ease;
     margin: 12px;
+}
+
+.logout_button {
+    width: 100px; /* Set width to fit your design */
+    height: 40px;
+    background-color: #172A62;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bolder;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-decoration: none; /* Remove underline from link */
+    position:relative;
+    right: 50px;
+}
+
+/* Add a hover effect for the button */
+.logout_button:hover {
+    background-color: #0f1c41; /* Darker shade for hover effect */
+}
+
+/* Ensure that the content area has appropriate spacing */
+.content {
+    padding: 20px; /* Adjust padding as needed */
 }
 
 .button:hover {

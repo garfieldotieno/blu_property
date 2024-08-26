@@ -1,20 +1,22 @@
-from server import app, db, user_datastore
-from flask_security.utils import hash_password
+from models import User
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from werkzeug.security import generate_password_hash
 
-with app.app_context():
-    db.create_all()
+# Database setup
+engine = create_engine('sqlite:///property.db')  # Adjust this to your actual database
+Session = sessionmaker(bind=engine)
+session = Session()
 
-    # Create roles
-    admin_role = user_datastore.find_or_create_role('admin')
-    landlord_role = user_datastore.find_or_create_role('landlord')
-    tenant_role = user_datastore.find_or_create_role('tenant')
+# Creating the mock admin user
+mock_admin = User(
+    email_or_phone="admin75@example.com",  # Replace with your desired admin email/phone
+    password=generate_password_hash("adminpassword"),  # Replace with your desired admin password
+    user_type="admin"
+)
 
-    # Create admin user
-    if not user_datastore.find_user(email="admin@example.com"):
-        user_datastore.create_user(
-            email="admin@example.com",
-            password=hash_password("adminpassword"),
-            roles=[admin_role]
-        )
+# Adding the mock admin to the database
+session.add(mock_admin)
+session.commit()
 
-    db.session.commit()
+print("Mock admin user created.")

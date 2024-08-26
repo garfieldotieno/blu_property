@@ -40,15 +40,15 @@ def show_register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET'])
-def login():
+def show_login():
     return render_template('login.html')
 
 @app.route('/default-content', methods=['GET'])
-def default_content():
+def show_default_content():
     return render_template('default.html')
 
 @app.route('/about', methods=['GET'])
-def about():
+def show_about():
     return render_template('about.html')
 
 
@@ -77,7 +77,6 @@ def register():
     return jsonify(access_token=access_token, refresh_token=refresh_token), 201
 
 
-# Login route
 @app.route('/login', methods=['POST'])
 def process_login():
     data = request.json
@@ -92,7 +91,19 @@ def process_login():
     access_token = create_access_token(identity=user.id)
     refresh_token = create_refresh_token(identity=user.id)
 
-    return jsonify(access_token=access_token, refresh_token=refresh_token)
+    # Return the tokens and user type in the response
+    return jsonify(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_name = user.email_or_phone,
+        user_type=user.user_type  # Assuming `user_type` is a field in your User model
+    )
+
+
+@app.route('/validate-token', methods=['GET'])
+@jwt_required()
+def validate_token():
+    return jsonify({"msg": "Token is valid"}), 200
 
 
 # Token refresh route
@@ -120,18 +131,16 @@ def protected():
     return jsonify(logged_in_as=current_user), 200
 
 
+# Unguarded routes
 @app.route('/tenant')
-@jwt_required()
 def tenant_home():
     return render_template('tenant.html')
 
 @app.route('/admin')
-@jwt_required()
 def admin_home():
     return render_template('admin.html')
 
 @app.route('/landlord')
-@jwt_required()
 def landlord_home():
     return render_template('landlord.html')
 

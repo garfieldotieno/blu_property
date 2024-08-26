@@ -9,9 +9,13 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(10), unique=True, nullable=False)
+    user_name = Column(String(20), unique=True, nullable=False)
+    
     email_or_phone = Column(String, unique=True, index=True)
-    password = Column(String)
-    user_type = Column(Enum('admin', 'landlord', 'tenant', 'regular_visitor', name='user_types'))
+    password_hash = Column(String(100), nullable=False)
+    
+    user_type = Column(Enum('Admin', 'Landlord', 'Tenant', 'Regular_visitor', name='user_types'))
 
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
