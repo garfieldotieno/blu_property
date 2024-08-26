@@ -8,7 +8,8 @@
     "start": "your-frontend-start-script"
   },
   "dependencies": {
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "htmx.org": "^1.9.12"
   },
   "devDependencies": {
     "json-server": "^1.0.0-beta.1"
