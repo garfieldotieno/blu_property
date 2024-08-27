@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Numeric, Enum
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Numeric, Enum, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
@@ -16,6 +16,7 @@ class User(Base):
     password_hash = Column(String(100), nullable=False)
     
     user_type = Column(Enum('Admin', 'Landlord', 'Tenant', 'Regular_visitor', name='user_types'))
+    suspended = Column(Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -31,6 +32,9 @@ class Otp(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     otp = Column(String, unique=True, index=True)
+    # add : user_email
+    # add : is_active_upto
+    
     user_type = Column(Enum('landlord', 'tenant', name='otp_user_types'))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -55,6 +59,7 @@ class Property(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     landlord_id = Column(Integer, ForeignKey('users.id'))
+    suspended = Column(Boolean, default=False)
 
     landlord = relationship('User', back_populates='properties')
     units = relationship('Unit', back_populates='property')
@@ -68,6 +73,7 @@ class Unit(Base):
     id = Column(Integer, primary_key=True, index=True)
     number = Column(String)
     property_id = Column(Integer, ForeignKey('properties.id'))
+    suspended = Column(Boolean, default=False)
 
     property = relationship('Property', back_populates='units')
     lease = relationship('Lease', uselist=False, back_populates='unit')

@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "datatables.net": "^2.1.4",
+    "datatables.net-dt": "^2.1.4",
     "htmx.org": "^1.9.12"
   },
   "devDependencies": {

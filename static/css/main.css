@@ -71,6 +71,101 @@ body {
     margin: 10px;
 }
 
+.dashboard-container {
+    flex: 1;
+    background-color: #FDC621;
+    border-radius: 10px;
+    padding: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 5s ease; /* Smooth transition for scaling */
+    margin: 10px;
+}
+
+.back-container {
+    width: 420px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensures content does not overflow */
+    background-color: white;
+    padding: 4px;
+    margin: 0 auto; /* Center the container */
+}
+
+/* Ensure table background is white */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Table headers */
+table thead tr {
+    background-color: #172A62; /* Adjust header color */
+    color: white;
+}
+
+/* Table rows */
+table tbody tr {
+    background-color: white; /* Ensure rows are white */
+    color: black; /* Text color */
+}
+
+/* Alternating row colors (optional) */
+table tbody tr:nth-child(odd) {
+    background-color: #f9f9f9; /* Light gray for alternating rows */
+}
+
+/* Table cells */
+table tbody td {
+    padding: 8px;
+    border: 1px solid #ddd;
+}
+
+
+.table-button-container {
+    height: auto;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background-color: white;
+    padding: 4px;
+    margin: 0 auto;
+}
+
+.table-button {
+    width: 150px; /* Button width */
+    height: 40px;
+    background-color: #172A62;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bolder;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 8px;
+    text-decoration: none;
+}
+
+
+
+
+.back-container a {
+    text-decoration: none;
+}
+
 .square img {
     border-radius: 10px;
     width: 80%;
@@ -91,6 +186,17 @@ body {
     /* margin-top: 16px; */
     padding: 4px;
 }
+
+.form-square{
+    display: flex;
+    flex-direction: vertical;
+
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+
 
 .button-container {
     display: flex;
@@ -157,7 +263,8 @@ body {
     justify-content: center;
 }
 
-.right-square input {
+.right-square input,
+.right-square select {
     width: 360px; /* Match the width of the buttons */
     height: 60px;
     padding: 10px;
@@ -170,7 +277,8 @@ body {
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.right-square input:focus {
+.right-square input:focus,
+.right-square select:focus {
     border-color: #172A62;
     box-shadow: 0 0 10px rgba(23, 42, 98, 0.5);
 }
@@ -179,6 +287,12 @@ body {
     color: #aaa;
     font-style: normal;
     text-align: center;
+}
+
+.right-square select {
+    /* Ensure that the select box matches the input box styling */
+    appearance: none; /* Removes default styling */
+    background-color: white; /* Matches input background */
 }
 
 .right-square p {
