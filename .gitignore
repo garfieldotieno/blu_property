@@ -25,7 +25,7 @@ static/node_modules/
 static/node_modules/*
 
 # Ignore anything in the templates directory
-templates/
+
 
 # Ignore any macOS system files
 .DS_Store

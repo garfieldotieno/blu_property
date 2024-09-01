@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Numeric, Enum, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Numeric, Enum, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
@@ -25,6 +25,7 @@ class User(Base):
     sessions = relationship('Session', back_populates='user')
     properties = relationship('Property', back_populates='landlord')
     leases = relationship('Lease', back_populates='tenant')
+    # units = relationship('Units', back_populates='tenant')
 
 
 class Otp(Base):
@@ -32,9 +33,13 @@ class Otp(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     otp = Column(String, unique=True, index=True)
-    # add : user_email
-    # add : is_active_upto
-    
+
+    # Added: User email
+    user_email = Column(String, nullable=False)
+
+    # Added: Is active up to (usually one day)
+    is_active_upto = Column(DateTime, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(days=1))
+
     user_type = Column(Enum('landlord', 'tenant', name='otp_user_types'))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -52,12 +57,22 @@ class Session(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "session_id": self.session_id,
+            "user_id": self.user_id,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 class Property(Base):
     __tablename__ = 'properties'
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
+    description = Column(String, nullable=False)
     landlord_id = Column(Integer, ForeignKey('users.id'))
     suspended = Column(Boolean, default=False)
 
@@ -66,19 +81,50 @@ class Property(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description":self.description,
+            "landlord_id": self.landlord_id,
+            "suspended": self.suspended,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "units": [unit.id for unit in self.units]  # List of related unit IDs
+        }
 
 class Unit(Base):
     __tablename__ = 'units'
 
     id = Column(Integer, primary_key=True, index=True)
     number = Column(String)
+    room_quantity = Column(Integer, nullable=False)
+    unit_type = Column(Enum("Studio", "1BedRoom", "2BedRoom", "3BedRoom", "Shop"), nullable=False)
+    unit_description = Column(String, nullable=False)
     property_id = Column(Integer, ForeignKey('properties.id'))
+    tenant_id = Column(Integer, ForeignKey('users.id'))
     suspended = Column(Boolean, default=False)
 
+    # tenant = relationship('User', back_populates='units')   
     property = relationship('Property', back_populates='units')
     lease = relationship('Lease', uselist=False, back_populates='unit')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "number": self.number,
+            "room_quantity": self.room_quantity,
+            "unit_type": self.unit_type,
+            "unit_description": self.unit_description,
+            "property_id": self.property_id,
+            "tenant_id": self.tenant_id,
+            "suspended": self.suspended,
+            "lease_id": self.lease.id if self.lease else None,  # ID of the related lease, if any
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
 
 
 class Lease(Base):
@@ -87,6 +133,8 @@ class Lease(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey('users.id'))
     unit_id = Column(Integer, ForeignKey('units.id'))
+    room_number = Column(Integer, nullable=False)
+
     start_date = Column(DateTime)
     end_date = Column(DateTime)
     rent_amount = Column(Numeric)
@@ -99,14 +147,33 @@ class Lease(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tenant_id": self.tenant_id,
+            "unit_id": self.unit_id,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "rent_amount": float(self.rent_amount) if self.rent_amount else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "reminders": [reminder.id for reminder in self.reminders],  # List of related reminder IDs
+            "confirmations": [confirmation.id for confirmation in self.confirmations],  # List of related confirmation IDs
+            "receipts": [receipt.id for receipt in self.receipts]  # List of related receipt IDs
+        }
+    
 
 class PaymentReminder(Base):
     __tablename__ = 'payment_reminders'
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer)
     lease_id = Column(Integer, ForeignKey('leases.id'))
-    reminder_date = Column(DateTime)
-
+    amount_due = Column(Float, nullable=False)
+    due_date = Column(DateTime, nullable=False)
+    payment_status = Column(Boolean)
+    payment_confirmation_issued = Column(Boolean, default=False)
+    
     lease = relationship('Lease', back_populates='reminders')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -117,21 +184,39 @@ class PaymentConfirmation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lease_id = Column(Integer, ForeignKey('leases.id'))
-    confirmation_date = Column(DateTime)
-    payment_details = Column(String)
+    payment_reminder_id = Column(Integer, ForeignKey('payment_reminders.id'))
+    amount_paid = Column(Float, nullable=False)
+    payment_type = Column(Enum('MobileMoney', "BankCheque", "Cash", "Crypto", "Other"))
+    payment_refference = Column(String)
+    Payment_description = Column(String)
+    payment_cleared = Column(Boolean, default=False)
 
     lease = relationship('Lease', back_populates='confirmations')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id":self.id,
+            "lease_id":self.lease_id,
+            "payment_reminder_id":self.payment_reminder_id,
+            "amount_paid":self.amount_paid,
+            "payment_type":self.payment_type,
+            "payment_refference":self.payment_refference,
+            "payment_description":self.Payment_description,
+            "payment_cleared" : self.payment_cleared
+        } 
 
 
 class Receipt(Base):
     __tablename__ = 'receipts'
 
     id = Column(Integer, primary_key=True, index=True)
+    receipt_number = Column(String, unique=True)
+    
     lease_id = Column(Integer, ForeignKey('leases.id'))
-    receipt_date = Column(DateTime)
-    amount = Column(Numeric)
+    receipt_date = Column(DateTime, default=datetime.datetime.utcnow)
+    amount = Column(Float, nullable=False)
     receipt_number = Column(String, unique=True)
     description = Column(String)
 

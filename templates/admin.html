@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dataTables.dataTables.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <a href="/" class="brand">Blu-Property</a>
+            <a href="/logout" class="logout_button">Logout</a>
+        </div>
+    </nav>
+    <div class="content">
+        <div class="popup_message_container" style="display: none;">
+            <div id="popup_message" class="popup_message">
+                <p id="popup_message_text"></p>
+                <button class="close_button" onclick="closePopup()">Close</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="square-container">
+                <div class="right-square">
+                    <div class="button-container">
+                        <button class="button" hx-get="http://localhost:5000/admin-users" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Users</button>
+                        <button class="button" hx-get="http://localhost:5000/admin-payment-reminders" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Payment Reminders</button>
+                        <button class="button" hx-get="http://localhost:5000/admin-payment-confirmations" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Payment Confirmations</button>
+                        <button class="button" onclick="window.location.href='https://wa.me/254703103960'">WhatsApp</button>
+                        <button class="button" onclick="window.location.href='tel:+254703103960'">Call</button>
+                        <button class="button" onclick="window.location.href='mailto:otienot75@gmail.com'">Email</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboard-container" class="dashboard-container" style="display:none;">
+                <!-- This is where the dynamic content will be loaded -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dataTables.js') }}"></script>
+
+    <script>
+        function activateDashboardContainer() {
+            document.querySelector('.square-container').style.display = 'none';
+            document.querySelector('#dashboard-container').style.display = 'block';
+        }
+
+        function initializeDataTable() {
+            $('#example').DataTable();
+        }
+
+        // Initialize DataTable after content is loaded
+        document.addEventListener('htmx:afterSwap', function(event) {
+            if (event.target.id === 'dashboard-container') {
+                initializeDataTable();
+            }
+        });
+
+        // Close the popup message
+        function closePopup() {
+            document.querySelector('.popup_message_container').style.display = 'none';
+            // Clear cookies
+            document.cookie = "pop_message=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            document.cookie = "message=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+        }
+
+        // Display popup message if cookie is set
+        function displayPopupMessage() {
+            const cookies = document.cookie.split('; ').reduce((acc, cookie) => {
+                const [name, value] = cookie.split('=');
+                acc[name] = value;
+                return acc;
+            }, {});
+
+            if (cookies['pop_message'] === 'true') {
+                document.querySelector('.popup_message_container').style.display = 'block';
+                document.getElementById('popup_message_text').textContent = cookies['message'] || '';
+            }
+        }
+
+        // Display the popup message when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            displayPopupMessage();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <a href="/" class="brand">Blu-Property</a>
+            
+                <a href="/logout" class="logout_button">Logout</a>
+            
+        </div>
+    </nav>
+    <div class="content">
+        <div class="container">
+            <div class="square-container">
+                <div class="right-square">
+                    <div class="button-container">
+                        <button class="button" hx-get="http://localhost:5000/tenant-units" hx-target=".right-square" hx-swap="innerHTML">
+                            Units
+                        </button>
+                        <button class="button" hx-get="http://localhost:5000/tenant-payments" hx-target=".right-square" hx-swap="innerHTML">
+                            Payments
+                        </button>
+                        <button class="button" hx-get="http://localhost:5000/tenant-reports" hx-target=".right-square" hx-swap="innerHTML">
+                            Reports
+                        </button>
+                        <button class="button" onclick="window.location.href='https://wa.me/254703103960'">WhatsApp</button>
+                        <button class="button" onclick="window.location.href='tel:+254703103960'">Call</button>
+                        <button class="button" onclick="window.location.href='mailto:otienot75@gmail.com'">Email</button>
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/htmx.min.js') }}"></script>
+</body>
+</html>

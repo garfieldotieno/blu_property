@@ -1,0 +1,26 @@
+<div class="back-container">
+    <div class="button-container">
+        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    </div>
+</div>
+
+<br><br>
+
+<div class="form-square" id="form-holder">
+    <form id="add-user-form" class="right-square" action="/add-lease" method="POST" hx-target="#form-holder" hx-swap="innerHTML">
+        <br>
+        <h4 id="header_with_landlord_id">Add Lease for Unit ID : {{unit_id}}</h4>
+        <br>
+        <input type="hidden" id="unit_id" name="unit_id" value='{{unit_id}}'>
+        <input type="text" id="tenant_id" name="tenant_id" placeholder="Tenant ID">
+        <input type="text" id="room_number" name="room_number" placeholder="Room Number">
+        <input type="text" id="rent_amount" name="rent_amount" placeholder="Rent Amount">
+        <input type="datetime-local" id="start_date" name="start_date" placeholder="Start Date">
+        <input type="datetime-local" id="end_date" name="end_date" placeholder="End Date">
+        <br>    
+        <br>
+        <div class="button-container">
+            <button class="button" type="submit">Submit</button>
+        </div>
+    </form>
+</div>

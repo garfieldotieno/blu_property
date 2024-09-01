@@ -1,0 +1,28 @@
+<div class="back-container">
+    <div class="button-container">
+        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    </div>
+</div>
+
+<br><br>
+
+<div class="form-square" id="form-holder">
+    <form id="add-user-form" class="right-square" action="/add-reminder" method="POST" hx-target="#form-holder" hx-swap="innerHTML">
+        <br>
+        <h4 id="header_with_landlord_id">Add Payment Reminder for Lease ID : {{lease_id}}</h4>
+        <br>
+        <input type="hidden" id="lease_id" name="lease_id" value="{{lease_id}}">
+        <input type="hidden" id="payment_status" name="payment_status" value='0'>
+
+        <input type="text" id="tenant_id" name="tenant_id" placeholder="Tenant ID">
+        <input type="text" id="amount_due" name="amount_due" placeholder="Amount Due">
+        
+        <input type="datetime-local" id="due_date" name="due_date" placeholder="Due Date">
+        
+        <br>    
+        <br>
+        <div class="button-container">
+            <button class="button" type="submit">Submit</button>
+        </div>
+    </form>
+</div>

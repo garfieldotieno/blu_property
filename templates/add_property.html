@@ -1,0 +1,26 @@
+<div class="back-container">
+    <div class="button-container">
+        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    </div>
+</div>
+
+<br><br>
+
+<div class="form-square" id="form-holder">
+    <form id="add-user-form" class="right-square" action="/add-property" method="POST" hx-target="#form-holder" hx-swap="innerHTML">
+        <br>
+        <h4 id="header_with_landlord_id">Add Property for Landlord ID : {{landlord_id}}</h4>
+        <br>
+        <input type="hidden" id="landlord_id" name="landlord_id" value='{{landlord_id}}'>
+        <input type="text" id="property_name" name="property_name" placeholder="Name" required>
+        <input type="text" id="property_description" name="property_description" placeholder="Description" required>
+        <br>    
+        
+        <br>
+        <div class="button-container">
+            <button class="button" type="submit">Submit</button>
+        </div>
+    </form>
+</div>
+
+

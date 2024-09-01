@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Blu-Property{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="square-container">
+        <div class="square">
+            <img src="{{ url_for('static', filename='images/blu_property_sample_0.jpeg') }}" alt="Square 1">
+        </div>
+        <div class="right-square">
+            <h2>Welcome</h2>
+            <p>Select to get started:</p>
+            <div class="button-container">
+                <!-- <button class="button" hx-get="http://localhost:5000/register" hx-target=".right-square" hx-swap="innerHTML">
+                    Register
+                </button> -->
+                <button class="button" hx-get="http://localhost:5000/login" hx-target=".right-square" hx-swap="innerHTML">
+                    Login
+                </button>
+                <button class="button" hx-get="http://localhost:5000/about" hx-target=".right-square" hx-swap="innerHTML">
+                    About
+                </button>
+                <button class="button" hx-get="http://localhost:5000/download-receipt" hx-target=".right-square" hx-swap="innerHTML">
+                    Download Receipt
+                </button>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

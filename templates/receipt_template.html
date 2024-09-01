@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .details {
+            margin-top: 30px;
+        }
+        .details p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Payment Receipt</h1>
+    </div>
+    <div class="details">
+        <p><strong>Receipt ID:</strong> {{ confirmation.id }}</p>
+        <p><strong>Lease ID:</strong> {{ confirmation.lease_id }}</p>
+        <p><strong>Amount Paid:</strong> ${{ confirmation.amount_paid }}</p>
+        <p><strong>Payment Type:</strong> {{ confirmation.payment_type }}</p>
+        <p><strong>Payment Reference:</strong> {{ confirmation.payment_refference }}</p>
+        <p><strong>Payment Description:</strong> {{ confirmation.payment_description }}</p>
+        <p><strong>Payment Cleared:</strong> {{ 'Yes' if confirmation.payment_cleared else 'No' }}</p>
+        <p><strong>Date:</strong> {{ confirmation.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+    <div class="footer">
+        <p>Thank you for your payment!</p>
+    </div>
+</body>
+</html>

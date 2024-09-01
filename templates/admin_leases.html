@@ -1,0 +1,115 @@
+<!-- Lease Management Section -->
+<div class="back-container">
+    <div class="button-container">
+        <button class="button" hx-get="http://localhost:5000/admin-property-units/{{back_property_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Back</button>
+    </div>
+</div>
+<br>
+<br>
+<h4 style="text-align: center;" id="value_header">{{header_title}}:Unit ID:{{front_unit_id}}</h4>
+<table id="example" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Tenant ID</th>
+            <th>Unit ID</th>
+            <th>Room Number</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Amount</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for lease in leases %}
+        <tr id="lease-{{lease.id}}">
+            <td>{{lease.id}}</td>
+            <td>{{lease.tenant_id}}</td>
+            <td>{{lease.unit_id}}</td>
+            <td>{{lease.room_number}}</td>
+            <td>{{lease.start_date}}</td>
+            <td>{{lease.end_date}}</td>
+            <td>{{lease.rent_amount}}</td>
+            
+            <td>
+                <div class="table-button-container">
+                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/{{lease.id}}/{{lease.tenant_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Payments</a>
+                </div>
+                <div class="table-button-container">
+                    <button class="table-button" onclick="deleteLease('{{ lease.id }}')">Delete</button>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br>
+<br>
+<div class="back-container">
+    <div class="button-container">
+        <button class="button" onclick="loadAddLeaseForm()">Add Lease</button>
+    </div>
+</div>
+<div id="dashboard-container" class="dashboard-container">
+    <!-- Placeholder for dynamic content, such as the add user form -->
+</div>
+<script>
+    function initializeDataTable() {
+        $('#example').DataTable();
+    }
+
+    // Initialize DataTable after the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDataTable();
+    });
+
+    function loadAddLeaseForm(){
+        // Get the property ID from the element with the id "value_header"
+        const headerElement = document.getElementById('value_header');
+        const headerText = headerElement.textContent;
+    
+        // Extract the property ID from the header text (assuming format is "val:val2:idval")
+        const parts = headerText.split(':');
+        const unitId = parts[2]?.trim();  // Get the 3rd part (index 2) and trim any extra spaces
+    
+        if (unitId) {
+            console.log(`Unit ID is: ${unitId}`);
+
+            // Fetch the form with the landlord ID
+            fetch(`/admin-add-lease/${unitId}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('dashboard-container').innerHTML = html;
+                })
+                .catch(error => console.error('Error loading add lease form:', error));
+        } else {
+            console.error('unit ID not found in the header.');
+        }
+    }
+
+    function deleteLease(leaseId){
+        if (confirm('Are you sure you want to delete this lease?')) {
+            fetch(`/delete-lease/${leaseId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ lease_id: leaseId })  // Send lease ID as JSON
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`lease-${leaseId}`);
+                    row.remove();
+                    alert(data.message); // Show success alert
+                } else {
+                    alert('Error: ' + data.message); // Show error alert
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting lease:', error);
+                alert('An error occurred while trying to delete the lease.');
+            });
+        }
+    }
+</script>

@@ -1,0 +1,13 @@
+<h4>Login</h4>
+<form class="submit_form" hx-post="/verify-login" hx-target=".right-square" hx-swap="innerHTML">
+    <input type="text" placeholder="Email or Phone" name="email_or_phone" required>
+    <input type="password" placeholder="Password" name="password" required>
+
+    <br>
+    <div class="button-container">
+        <button type="submit" class="button">Submit</button>
+        <button type="button" class="button" hx-get="/default-content" hx-target=".right-square">Cancel</button>
+    </div>
+</form>
+
+<div class="right-square"></div>

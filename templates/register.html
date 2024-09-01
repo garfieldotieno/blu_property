@@ -1,0 +1,48 @@
+<h4>Register</h4>
+<form class="submit_form" onsubmit="submitForm(event)">
+    <input type="text" placeholder="Email or Phone" name="email_or_phone" required>
+    <input type="password" placeholder="Password" name="password" required>
+    <br>
+    <div class="button-container">
+        <button type="submit" class="button">Submit</button>
+        <button type="button" class="button" hx-get="http://localhost:5000/default-content" hx-target=".right-square">Cancel</button>
+    </div>
+</form>
+
+<script>
+function submitForm(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    // Collect form data
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    // Send the data as JSON
+    fetch("http://localhost:3000/register", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to register. Please check your input.");
+        }
+        return response.json(); // Parse JSON response
+    })
+    .then(data => {
+        // Store the access and refresh tokens in localStorage
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+
+        // Optionally redirect or update the UI
+        document.querySelector(".right-square").innerHTML = "<p>Registration successful. Welcome!</p>";
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        document.querySelector(".right-square").innerHTML = `<p>Error: ${error.message}</p>`;
+    });
+}
+</script>

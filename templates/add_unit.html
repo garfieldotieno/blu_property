@@ -1,0 +1,36 @@
+<div class="back-container">
+    <div class="button-container">
+        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    </div>
+</div>
+
+<br><br>
+
+<div class="form-square" id="form-holder">
+    <form id="add-user-form" class="right-square" action="/add-unit" method="POST" hx-target="#form-holder" hx-swap="innerHTML">
+        <br>
+        <h4 id="header_with_landlord_id">Add Unit for Property ID : {{property_id}}</h4>
+        <br>
+        <input type="hidden" id="property_id" name="property_id" value='{{property_id}}'>
+        <input type="text" id="unit_house_number" name="unit_house_number" placeholder="Number" required>
+        <input type="text" id="unit_room_quantity" name="unit_room_quantity" placeholder="Quantity" required>
+        <input type="text" id="unit_house_description" name="unit_house_description" placeholder="Description" required>
+        <select id="unit_type" name="unit_type" required>
+            <option value="" disabled selected hidden>Unit Type</option>
+            <option value="Shop">Shop</option> 
+            <option value="Studio">Studio</option>
+            <option value="1BedRoom">1 BedRoom</option>
+            <option value="2BedRoom">2 BedRoom</option>
+            <option value="3BedRoom">3 BedRoom</option>
+        </select>
+        <br>    
+        
+        <br>
+        <div class="button-container">
+            <button class="button" type="submit">Submit</button>
+        </div>
+    </form>
+</div>
+
+
+
