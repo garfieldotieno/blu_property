@@ -2,45 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Payment Receipt</title>
+    <title>Receipt</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt;
+                width: 512pt;
+                top: 50pt;
+                height: 40pt;
+            }
+
+            @frame content_frame {
+                -pdf-frame-content: content_content;
+                left: 50pt;
+                width: 512pt;
+                top: 100pt;
+                height: 632pt;
+            }
+
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt;
+                width: 512pt;
+                top: 772pt;
+                height: 20pt;
+            }
+        }
+
         body {
             font-family: Arial, sans-serif;
-            margin: 40px;
+            color: #333;
+            margin: 0;
+            padding: 0;
         }
-        .header {
+
+        #header_content {
+            font-size: 18px;
             text-align: center;
+            font-weight: bold;
+        }
+
+        #footer_content {
+            font-size: 12px;
+            text-align: center;
+            color: #777;
+        }
+
+        .table-container {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 500px;
+            border-collapse: collapse;
             margin-bottom: 20px;
         }
-        .details {
-            margin-top: 30px;
+
+        table, th, td {
+            border: 1px solid #ddd;
         }
-        .details p {
+
+        th, td {
+            padding: 10px;
+            text-align: left;
             font-size: 14px;
-            margin: 5px 0;
         }
-        .footer {
-            text-align: center;
-            margin-top: 50px;
+
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Payment Receipt</h1>
-    </div>
-    <div class="details">
-        <p><strong>Receipt ID:</strong> {{ confirmation.id }}</p>
-        <p><strong>Lease ID:</strong> {{ confirmation.lease_id }}</p>
-        <p><strong>Amount Paid:</strong> ${{ confirmation.amount_paid }}</p>
-        <p><strong>Payment Type:</strong> {{ confirmation.payment_type }}</p>
-        <p><strong>Payment Reference:</strong> {{ confirmation.payment_refference }}</p>
-        <p><strong>Payment Description:</strong> {{ confirmation.payment_description }}</p>
-        <p><strong>Payment Cleared:</strong> {{ 'Yes' if confirmation.payment_cleared else 'No' }}</p>
-        <p><strong>Date:</strong> {{ confirmation.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-    </div>
-    <div class="footer">
-        <p>Thank you for your payment!</p>
+    
+    <!-- Content for Dynamic Frame 'content_frame' -->
+    <div id="content_content">
+        <div class="table-container">
+            <h2 style="text-align: center;">Payment Details</h2>
+            <table>
+                <tr>
+                    <th>Confirmation ID</th>
+                    <td>{{ confirmation.id }}</td>
+                </tr>
+                <tr>
+                    <th>Lease ID</th>
+                    <td>{{ confirmation.lease_id }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Reminder ID</th>
+                    <td>{{ confirmation.payment_reminder_id }}</td>
+                </tr>
+                <tr>
+                    <th>Amount Paid</th>
+                    <td>{{ confirmation.amount_paid }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Type</th>
+                    <td>{{ confirmation.payment_type }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Reference</th>
+                    <td>{{ confirmation.payment_refference }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Description</th>
+                    <td>{{ confirmation.Payment_description }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Cleared</th>
+                    <td>{{ confirmation.payment_cleared }}</td>
+                </tr>
+                <tr>
+                    <th>Created At</th>
+                    <td>{{ confirmation.created_at }}</td>
+                </tr>
+                <tr>
+                    <th>Updated At</th>
+                    <td>{{ confirmation.updated_at }}</td>
+                </tr>
+            </table>
+        </div>
     </div>
 </body>
 </html>

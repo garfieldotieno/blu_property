@@ -1,106 +1,234 @@
-<!-- User Management Section -->
-<div class="back-container">
-    <div class="button-container">
-        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    <!-- User Management Section -->
+    <div class="back-container">
+        <div class="button-container">
+            <a href="/" class="button" style="text-decoration: none;">Back</a>
+        </div>
+        
     </div>
-    
-</div>
-<br>
-<br>
-<h4 style="text-align: center;">{{header_title}}</h4>
-<table id="example" class="display" style="width:100%">
-    <thead>
-        <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Email/Phone</th>
-            <th>User Type</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr id="user-{{ user.id }}">
-            <td>{{ user.id }}</td>
-            <td>{{ user.user_name }}</td>
-            <td>{{ user.email_or_phone }}</td>
-            <td>{{ user.user_type }}</td>
-            <td>
-                {% if user.user_type != 'Admin' %}
-                    {% if user.user_type == 'Landlord' %}
+    <br>
+    <br>
+    <h4 style="text-align: center;">{{header_title}}</h4>
+    <table id="example" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email/Phone</th>
+                <th>User Type</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr id="user-{{ user.id }}">
+                <td>{{ user.id }}</td>
+                <td>{{ user.user_name }}</td>
+                <td>{{ user.email_or_phone }}</td>
+                <td>{{ user.user_type }}</td>
+                <td>
+                    {% if user.user_type != 'Admin' %}
+                        {% if user.user_type == 'Landlord' %}
+                            <div class="table-button-container">
+                                <a href="" class="table-button" hx-get="http://localhost:5000/admin-user-properties/{{user.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Properties</a>
+                            </div>
+                        {% endif %}
+                        {% if user.user_type == 'Tenant' %}
+                            <div class="table-button-container">
+                                <a href="" class="table-button">Leases</a>
+                            </div>
+                        {% endif %}
                         <div class="table-button-container">
-                            <a href="" class="table-button" hx-get="http://localhost:5000/admin-user-properties/{{user.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Properties</a>
+                            <button class="table-button" onclick="deleteUser('{{ user.id }}')">Delete</button>
                         </div>
                     {% endif %}
-                    {% if user.user_type == 'Tenant' %}
-                        <div class="table-button-container">
-                            <a href="" class="table-button">Leases</a>
-                        </div>
-                    {% endif %}
-                    <div class="table-button-container">
-                        <button class="table-button" onclick="deleteUser('{{ user.id }}')">Delete</button>
+                </td>
+            </tr>        
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <br>
+    <div class="back-container">
+        <div class="button-container">
+            <button class="button" onclick="loadAddUserFormModal()">Add User</button>
+        </div>
+    </div>
+    <div id="dashboard-container" class="dashboard-container">
+        <!-- Placeholder for dynamic content, such as the add user form -->
+    </div>
+
+    <div class="modal" id="add_user_modal">
+        <div class="modal-content">
+            <br>
+            <br>
+            <br>
+            <br>
+            <div class="form-square" id="form-holder">
+                <form id="add-user-form" class="right-square">
+                    <br>
+                    <h4>Add User</h4>
+                    <br>
+                    <input type="text" id="user_name" name="user_name" placeholder="Name" required>
+                    <input type="text" id="email_or_phone" name="email_or_phone" placeholder="email/phone" required>
+                    <br>    
+                    <select id="user_type" name="user_type" required>
+                        <option value="" disabled selected hidden>Role</option> 
+                        <option value="Landlord">Landlord</option>
+                        <option value="Tenant">Tenant</option>
+                    </select>
+                    <br>
+                    <select name="user_otp" id="user_otp" required>
+                        <option value="" disabled selected hidden>OTP</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                    <br>
+                    <br>
+                    <div class="button-container">
+                        <button id="confirmButton" class="button" type="submit">Submit</button>
                     </div>
-                {% endif %}
-            </td>
-        </tr>        
-        {% endfor %}
-    </tbody>
-</table>
-<br>
-<br>
-<div class="back-container">
-    <div class="button-container">
-        <button class="button" onclick="loadAddUserForm()">Add User</button>
+                </form>
+            </div>
+            <div class="button-container">
+                <button id="cancelButton" class="button">Cancel</button>
+            </div>
+        </div>
     </div>
-</div>
-<div id="dashboard-container" class="dashboard-container">
-    <!-- Placeholder for dynamic content, such as the add user form -->
-</div>
 
-<script>
-    function initializeDataTable() {
-        $('#example').DataTable();
-    }
 
-    // Initialize DataTable after the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeDataTable();
-    });
+    <script>
+        function initializeDataTable() {
+            $('#example').DataTable();
+        }
 
-    function loadAddUserForm() {
-        fetch('/admin-add-user')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('dashboard-container').innerHTML = html;
-            })
-            .catch(error => console.error('Error loading add user form:', error));
-    }
+        // Initialize DataTable after the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDataTable();
+        });
 
-    function deleteUser(userId) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            fetch(`/delete-user/${userId}`, {
-                method: 'DELETE',
+        function loadAddUserFormModal(){
+        // Get the modal
+        var modal = document.getElementById("add_user_modal");
+
+        // Open the modal 
+        modal.style.display = "block";
+
+        // Get the buttons that open and close the modal
+        var confirmButton = document.getElementById("confirmButton");
+        var cancelButton = document.getElementById("cancelButton");
+
+        // When the user clicks on the cancel button, close the modal
+        cancelButton.onclick = function() {
+            modal.style.display = "none";
+        };
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+
+    // When the user clicks on the confirm button, perform the confirmation
+    confirmButton.onclick = function() {
+        // Add event listener to the form for submission
+        document.getElementById("add-user-form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            // Collect the form data
+            const formData = new FormData(this);
+            const userName = formData.get("user_name");
+            const emailOrPhone = formData.get("email_or_phone");
+            const userType = formData.get("user_type");
+            const userOtp = formData.get("user_otp");
+
+            // Make the call to the backend to add the new user
+            fetch('/add-user', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ user_id: userId })  // Send user ID as JSON
+                body: JSON.stringify({
+                    user_name: userName,
+                    email_or_phone: emailOrPhone,
+                    user_type: userType,
+                    user_otp: userOtp
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const row = document.getElementById(`user-${userId}`);
-                    row.remove();
-                    alert(data.message); // Show success alert
+                    // Add the new user to the table
+                    const userTable = document.querySelector("#example tbody");
+                    if (userTable) {
+                        const newRow = document.createElement("tr");
+                        newRow.id = `user-${data.user.id}`;
+                        newRow.innerHTML = `
+                            <td>${data.user.id}</td>
+                            <td>${data.user.user_name}</td>
+                            <td>${data.user.email_or_phone}</td>
+                            <td>${data.user.user_type}</td>
+                            <td>
+                                ${data.user.user_type === 'Landlord' ? `
+                                    <div class="table-button-container">
+                                        <a href="" class="table-button" hx-get="http://localhost:5000/admin-user-properties/${data.user.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Properties</a>
+                                    </div>
+                                ` : data.user.user_type === 'Tenant' ? `
+                                    <div class="table-button-container">
+                                        <a href="" class="table-button">Leases</a>
+                                    </div>
+                                ` : ''}
+                                <div class="table-button-container">
+                                    <button class="table-button" onclick="deleteUser('${data.user.id}')">Delete</button>
+                                </div>
+                            </td>
+                        `;
+                        userTable.appendChild(newRow);
+
+                        alert(`${data.message}`);
+                    }
+
+                    // Close the modal
+                    modal.style.display = "none";
                 } else {
                     alert('Error: ' + data.message); // Show error alert
                 }
             })
             .catch(error => {
-                console.error('Error deleting user:', error);
-                alert('An error occurred while trying to delete the user.');
+                console.error('Error adding user:', error);
+                alert('An error occurred while trying to add the user.');
             });
-        }
-    }
 
-    
-</script>
+                });
+            };
+        }
+
+        
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                fetch(`/delete-user/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId })  // Send user ID as JSON
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const row = document.getElementById(`user-${userId}`);
+                        row.remove();
+                        alert(data.message); // Show success alert
+                    } else {
+                        alert('Error: ' + data.message); // Show error alert
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                    alert('An error occurred while trying to delete the user.');
+                });
+            }
+        }
+
+        
+    </script>

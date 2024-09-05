@@ -53,7 +53,7 @@
 <br>
 <div class="back-container">
     <div class="button-container">
-        <button class="button" onclick="loadAddPaymentReminderForm()">Add Payment Reminder</button>
+        <button class="button" onclick="loadAddPaymentReminderFormModal()">Add Payment Reminder</button>
     </div>
 </div>
 <br>
@@ -141,6 +141,37 @@
     </div>
 </div>
 
+<!-- add payment reminder -->
+ <div class="modal" id="add_payment_reminder_modal">
+    <div class="modal-content">
+        <br>
+        <br>
+        <br>
+        <br>
+        <div class="form-square" id="form-holder">
+            <form action="add-payment-reminder-form" class="right-square">
+            <br>
+                <h4 id="header_with_lease_id">Add Payment Reminder for Lease ID : {{lease_id}}</h4>
+                <br>
+                <input type="hidden" id="lease_id" name="lease_id" value="{{lease_id}}">
+                <input type="hidden" id="payment_status" name="payment_status" value='0'>
+
+                <input type="text" id="tenant_id" name="tenant_id" placeholder="Tenant ID">
+                <input type="text" id="amount_due" name="amount_due" placeholder="Amount Due">
+        
+                <input type="datetime-local" id="due_date" name="due_date" placeholder="Due Date">
+        
+                <br>    
+                <br>
+                <div class="button-container">
+                    <button id="confirmLeaseButton" class="button" type="submit">Submit</button>
+                    <button class="button" id="cancelLeaseButton" type="button">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+ </div>
+
 
 <script>
     function initializeDataTable() {
@@ -153,125 +184,235 @@
         initializeDataTable();
     });
 
-    function loadAddPaymentReminderForm() {
-        // Get the property ID from the element with the id "value_header"
-        const headerElement = document.getElementById('value_header');
-        const headerText = headerElement.textContent;
-
-        // Extract the property ID from the header text (assuming format is "val:val2:idval")
-        const parts = headerText.split(':');
-        const leaseId = parts[2]?.trim();  // Get the 3rd part (index 2) and trim any extra spaces
-
-        if (leaseId) {
-            console.log(`Lease ID is: ${leaseId}`);
-
-            // Fetch the form with the landlord ID
-            fetch(`/admin-add-payment-reminder/${leaseId}`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('dashboard-container').innerHTML = html;
-                })
-                .catch(error => console.error('Error loading add payment reminder form:', error));
-        } else {
-            console.error('Lease ID not found in the header.');
+    function deleteReminder(reminderId) {
+        if (confirm("Are you sure you want to delete this reminder?")) {
+            fetch(`/delete-reminder/${reminderId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Optionally, remove the row from the table or refresh the page
+                    const reminderRow = document.querySelector(`#reminder-${reminderId}`);
+                    if (reminderRow) {
+                        reminderRow.remove(); // Remove the row from the DOM
+                    }
+                } else {
+                    console.error('Error deleting reminder:', data.error);
+                }
+            })
+            .catch(error => console.error('Error deleting reminder:', error));
         }
     }
 
-    function appendConfirmation(reminderId) {
-        // Get the modal
-        var modal = document.getElementById("confirmationModal");
-        // Open the modal 
-        modal.style.display = "block";
+    
+    function loadAddPaymentReminderFormModal(){
+    // Get the modal
+    var modal = document.getElementById("add_payment_reminder_modal");
 
-        // Get the buttons that open and close the modal
-        var confirmButton = document.getElementById("confirmButton");
-        var cancelButton = document.getElementById("cancelButton");
+    // Open the modal
+    modal.style.display = "block";
 
-        // When the user clicks on the confirm button, perform the confirmation
-        confirmButton.onclick = function() {
-            // Add event listener to the form for submission
-            document.getElementById("update-reminder-form").addEventListener("submit", function(event) {
-                event.preventDefault(); // Prevent the default form submission
+    // Get the buttons that open and close the modal
+    var confirmButton = document.getElementById("confirmLeaseButton");
+    var cancelButton = document.getElementById("cancelLeaseButton");
 
-                // Collect the form data
-                const formData = new FormData(this);
-                const leaseId = formData.get("lease_id");
-                const amountPaid = formData.get("amount_paid");
-                const paymentType = formData.get("payment_type");
-                const paymentReference = formData.get("payment_refference");
-                const paymentDescription = formData.get("payment_description");
+    // When the user clicks on the cancel button, close the modal
+    cancelButton.onclick = function() {
+        modal.style.display = "none";
+    };
 
-                // Make the call to the backend to update the confirmation status and create a new record
-                fetch(`/update-reminder/${reminderId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        confirmation_status: true,  // Update the status to true
-                        lease_id: leaseId,
-                        amount_paid: amountPaid,
-                        payment_type: paymentType,
-                        payment_refference: paymentReference,
-                        payment_description: paymentDescription
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update the UI to reflect the confirmation
-                        const reminderRow = document.getElementById(`reminder-${reminderId}`);
-                        if (reminderRow) {
-                            const actionCell = reminderRow.querySelector('td:last-child');
-                            if (actionCell) {
-                                actionCell.innerHTML = '';  // Remove the button from the action cell
-                            }
-                        }
-
-                        // Add the new record to the Pending Payment Confirmations table
-                        const confirmationTable = document.querySelector("#example2 tbody");
-                        if (confirmationTable) {
-                            const newRow = document.createElement("tr");
-                            newRow.id = `confirmation-${data.payment_confirmation.id}`;
-                            newRow.innerHTML = `
-                                <td>${data.payment_confirmation.id}</td>
-                                <td>${data.payment_confirmation.lease_id}</td>
-                                <td>${reminderId}</td>
-                                <td>${data.payment_confirmation.amount_paid}</td>
-                                <td>${data.payment_confirmation.payment_type}</td>
-                                <td>${data.payment_confirmation.payment_refference}</td>
-                                <td>${data.payment_confirmation.payment_description}</td>
-                                <td>
-                                    <div class="table-button-container">
-                                        <a href="" class="table-button">Clear</a> 
-                                    </div>
-                                </td>
-                            `;
-                            confirmationTable.appendChild(newRow);
-                        }
-
-                        // Close the modal
-                        modal.style.display = "none";
-                    } else {
-                        console.error('Error updating confirmation:', data.error);
-                    }
-                })
-                .catch(error => console.error('Error updating confirmation:', error));
-            });
-        };
-
-        // When the user clicks on the cancel button, close the modal
-        cancelButton.onclick = function() {
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
             modal.style.display = "none";
-        };
+        }
+    };
 
-        // When the user clicks anywhere outside of the modal, close it
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
+    // Add event listener to the form for submission
+    confirmButton.onclick = function(event) {
+        event.preventDefault(); // Prevent the default form submission behavior
+
+        // Collect the form data
+        var leaseId = document.getElementById("lease_id").value;
+        var tenantId = document.getElementById("tenant_id").value;
+        var amountDue = document.getElementById("amount_due").value;
+        var dueDate = document.getElementById("due_date").value;
+        var paymentStatus = document.getElementById("payment_status").value;
+
+        // Check if required fields are filled
+        if (!tenantId || !amountDue || !dueDate) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        // Send the data to the backend using fetch API
+        fetch('/add-reminder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    lease_id: leaseId,
+                    tenant_id: tenantId,
+                    amount_due: amountDue,
+                    due_date: dueDate,
+                    payment_status: paymentStatus
+                })
+            })
+        .then(response => response.json())
+        .then(data => {
+                if (data.success) {
+                    // Add the new reminder row to the table
+                    const reminderTable = document.querySelector("#example tbody");
+                    if (reminderTable) {
+                        const newRow = document.createElement("tr");
+                        newRow.id = `reminder-${data.reminder.id}`;
+                        newRow.innerHTML = `
+                            <td>${data.reminder.id}</td>
+                            <td>${data.reminder.tenant_id}</td>
+                            <td>${data.reminder.lease_id}</td>
+                            <td>${data.reminder.amount_due}</td>
+                            <td>${data.reminder.due_date}</td>
+                            <td>${data.reminder.payment_status}</td>
+                            <td>
+                                <div class="table-button-container">
+                                    <a href="javascript:void(0);" class="table-button" onclick="appendConfirmation('${data.reminder.id}')">Update Confirmation</a>
+                                </div>
+                                <div class="table-button-container">
+                                    <a href="javascript:void(0);" class="table-button" onclick="deleteReminder('${data.reminder.id}')">Delete</a>
+                                </div>
+                            </td>
+                        `;
+                        reminderTable.appendChild(newRow);
+                    }
+
+                    // Close the modal after successful submission
+                    modal.style.display = "none";
+                } else {
+                    alert("Error adding payment reminder: " + data.error);
+                }
+            })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+        
         };
     }
+
+
+    
+    function appendConfirmation(reminderId) {
+    // Get the modal
+    var modal = document.getElementById("confirmationModal");
+    // Open the modal 
+    modal.style.display = "block";
+
+    // Get the buttons that open and close the modal
+    var confirmButton = document.getElementById("confirmButton");
+    var cancelButton = document.getElementById("cancelButton");
+
+    // When the user clicks on the confirm button, perform the confirmation
+    confirmButton.onclick = function() {
+        // Add event listener to the form for submission
+        document.getElementById("update-reminder-form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            // Collect the form data
+            const formData = new FormData(this);
+            const leaseId = formData.get("lease_id");
+            const amountPaid = formData.get("amount_paid");
+            const paymentType = formData.get("payment_type");
+            const paymentReference = formData.get("payment_refference");
+            const paymentDescription = formData.get("payment_description");
+
+            // Log the collected form data
+            console.log("Form Data:", {
+                leaseId,
+                amountPaid,
+                paymentType,
+                paymentReference,
+                paymentDescription
+            });
+
+            // Make the call to the backend to update the confirmation status and create a new record
+            fetch(`/update-reminder/${reminderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    confirmation_status: true,  // Update the status to true
+                    lease_id: leaseId,
+                    amount_paid: amountPaid,
+                    payment_type: paymentType,
+                    payment_refference: paymentReference,
+                    payment_description: paymentDescription
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Log the response data
+                console.log("Response Data:", data);
+
+                if (data.success) {
+                    // Update the UI to reflect the confirmation
+                    const reminderRow = document.getElementById(`reminder-${reminderId}`);
+                    if (reminderRow) {
+                        const actionCell = reminderRow.querySelector('td:last-child');
+                        if (actionCell) {
+                            actionCell.innerHTML = '';  // Remove the button from the action cell
+                        }
+                    }
+
+                    // Add the new record to the Pending Payment Confirmations table
+                    const confirmationTable = document.querySelector("#example2 tbody");
+                    if (confirmationTable) {
+                        const newRow = document.createElement("tr");
+                        newRow.id = `confirmation-${data.payment_confirmation.id}`;
+                        newRow.innerHTML = `
+                            <td>${data.payment_confirmation.id}</td>
+                            <td>${data.payment_confirmation.lease_id}</td>
+                            <td>${reminderId}</td>
+                            <td>${data.payment_confirmation.amount_paid}</td>
+                            <td>${data.payment_confirmation.payment_type}</td>
+                            <td>${data.payment_confirmation.payment_refference}</td>
+                            <td>${data.payment_confirmation.payment_description}</td>
+                            <td>
+                                <div class="table-button-container">
+                                    <a href="#" class="table-button" onclick="clearConfirmation('${data.payment_confirmation.id}')">Clear</a>
+                                </div>
+                            </td>
+                        `;
+                        confirmationTable.appendChild(newRow);
+                    }
+
+                    // Close the modal
+                    modal.style.display = "none";
+                } else {
+                    console.error('Error updating confirmation:', data.error);
+                }
+            })
+            .catch(error => console.error('Error updating confirmation:', error));
+        });
+    };
+
+    // When the user clicks on the cancel button, close the modal
+    cancelButton.onclick = function() {
+        modal.style.display = "none";
+    };
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    };
+    }
+
 
     function clearConfirmation(confirmationId) {
         alert("you are about to clear a payment confirmation")
@@ -297,29 +438,7 @@
     }
 
 
-    function deleteReminder(reminderId) {
-        if (confirm("Are you sure you want to delete this reminder?")) {
-            fetch(`/delete-reminder/${reminderId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Optionally, remove the row from the table or refresh the page
-                    const reminderRow = document.querySelector(`#reminder-${reminderId}`);
-                    if (reminderRow) {
-                        reminderRow.remove(); // Remove the row from the DOM
-                    }
-                } else {
-                    console.error('Error deleting reminder:', data.error);
-                }
-            })
-            .catch(error => console.error('Error deleting reminder:', error));
-        }
-    }
+    
 
 
 </script>

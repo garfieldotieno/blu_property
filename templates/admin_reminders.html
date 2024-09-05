@@ -1,0 +1,72 @@
+<!-- Payment Reminders Management Section -->
+<div class="back-container">
+    <div class="button-container">
+        <a href="/" class="button" style="text-decoration: none;">Back</a>
+    </div>
+    
+</div>
+<br>
+<br>
+<h4 style="text-align: center;">{{header_title}}</h4>
+<table id="example" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Tenant ID</th>
+            <th>Lease ID</th>
+            <th>Amount Due</th>
+            <th>Payment Date</th>
+            <th>Payment Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reminder in reminders %}
+        <tr id="reminder-{{reminder.id}}">
+            <td>{{reminder.id}}</td>
+            <td>{{reminder.tenant_id}}</td> 
+            <td>{{reminder.lease_id}}</td>
+            <td>{{reminder.amount_due}}</td>
+            <td>{{reminder.due_date}}</td>
+            <td>{{reminder.payment_status}}</td>
+            <td>
+                {% if not reminder.payment_confirmation_issued %}
+                    <div class="table-button-container">
+                        <a href="javascript:void(0);" class="table-button" onclick="appendConfirmation('{{reminder.id}}')">Update Confirmation</a>
+                    </div>
+                    <div class="table-button-container">
+                        <a href="javascript:void(0);" class="table-button" onclick="deleteReminder('{{reminder.id}}')">Delete</a>
+                    </div>
+                
+                
+                {% endif %}
+                
+            </td>
+            
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br>
+<br>
+<div class="back-container">
+    <div class="button-container">
+        <button class="button" onclick="loadAddUserForm()">Generate Report</button>
+    </div>
+</div>
+<div id="dashboard-container" class="dashboard-container">
+    <!-- Placeholder for dynamic content, such as the add user form -->
+</div>
+
+<script>
+    function initializeDataTable() {
+        $('#example').DataTable();
+    }
+
+    // Initialize DataTable after the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDataTable();
+    });
+
+    
+</script>

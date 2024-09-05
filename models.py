@@ -152,6 +152,7 @@ class Lease(Base):
             "id": self.id,
             "tenant_id": self.tenant_id,
             "unit_id": self.unit_id,
+            "unit_room_number":self.room_number,
             "start_date": self.start_date.isoformat() if self.start_date else None,
             "end_date": self.end_date.isoformat() if self.end_date else None,
             "rent_amount": float(self.rent_amount) if self.rent_amount else None,
@@ -173,10 +174,24 @@ class PaymentReminder(Base):
     due_date = Column(DateTime, nullable=False)
     payment_status = Column(Boolean)
     payment_confirmation_issued = Column(Boolean, default=False)
-    
+
     lease = relationship('Lease', back_populates='reminders')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'lease_id': self.lease_id,
+            'amount_due': self.amount_due,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'payment_status': self.payment_status,
+            'payment_confirmation_issued': self.payment_confirmation_issued,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
 
 
 class PaymentConfirmation(Base):
@@ -213,13 +228,26 @@ class Receipt(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     receipt_number = Column(String, unique=True)
-    
+    confirmation_id = Column(Integer, unique=True)
+
     lease_id = Column(Integer, ForeignKey('leases.id'))
     receipt_date = Column(DateTime, default=datetime.datetime.utcnow)
     amount = Column(Float, nullable=False)
-    receipt_number = Column(String, unique=True)
     description = Column(String)
 
     lease = relationship('Lease', back_populates='receipts')
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'receipt_number': self.receipt_number,
+            'confirmation_id': self.confirmation_id,
+            'lease_id': self.lease_id,
+            'receipt_date': self.receipt_date.isoformat() if self.receipt_date else None,
+            'amount': self.amount,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        } 

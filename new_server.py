@@ -474,23 +474,28 @@ def generate_otp_code(length=6):
     otp_code = ''.join([str(random.randint(0, 9)) for _ in range(length)])
     return otp_code
 
+
 @app.route('/add-user', methods=['POST'])
 def add_user():
-    user_name = request.form.get('user_name')
-    email_or_phone = request.form.get('email_or_phone')
-    user_type = request.form.get('user_type')
-    otp_value = request.form.get('user_otp')
-
-    if not user_name or not email_or_phone or not user_type:
-        response = make_response(render_template('admin.html', pop_message=True, message="All fields are required."))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', "All fields are required.", expires=datetime.now() + timedelta(minutes=5))
-        return response
-
-    rando_password = generate_otp_code(8)
-    hashed_password = hash_password(rando_password)
-
     try:
+        # Get JSON data from the request
+        data = request.json
+        print(f"received data is : {data}")
+
+        user_name = data.get('user_name')
+        email_or_phone = data.get('email_or_phone')
+        user_type = data.get('user_type')
+        otp_value = data.get('user_otp')
+
+        # Check for required fields
+        if not user_name or not email_or_phone or not user_type:
+            return jsonify({'success': False, 'error': 'All fields are required.'}), 400
+
+        # Generate a random password and hash it
+        rando_password = generate_otp_code(8)
+        hashed_password = hash_password(rando_password)
+
+        # Create a new User record
         new_user = User(
             uid=generate_otp_code(10),
             user_name=user_name,
@@ -498,8 +503,10 @@ def add_user():
             user_type=user_type,
             password_hash=hashed_password
         )
+
+        # Add the new user to the database session
         db_session.add(new_user)
-        db_session.commit()
+        
 
         otp_code = None
         if otp_value == 'yes':
@@ -510,47 +517,57 @@ def add_user():
                 otp=otp_code
             )
             db_session.add(otp_record)
-            db_session.commit()
+        
+        # commit all changes
+        db_session.commit()
 
+        # Build a success message
         message = f"User {new_user.user_name} added successfully."
         if otp_code:
-            message += f" OTP generated: {otp_code}, and password : {rando_password}"
+            message += f" OTP generated: {otp_code}, and password: {rando_password}"
 
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', message, expires=datetime.now() + timedelta(minutes=5))
-        return response
+        # Return success response as JSON
+        print(f"Success in adding user, message: {message}")
+        return jsonify({
+            'success': True,
+            'message': message,
+            'user': {
+                'id':new_user.id,
+                'user_name': new_user.user_name,
+                'email_or_phone': new_user.email_or_phone,
+                'user_type': new_user.user_type,
+                'otp_code': otp_code,
+                'password': rando_password
+            }
+        }), 200
 
     except Exception as e:
+        # Rollback in case of an error
+        print(f"Error: {e}")
         db_session.rollback()
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', f"An error occurred: {str(e)}", expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/add-property', methods=['POST'])
 def add_landlord_property():
-    property_name = request.form.get('property_name')
-    landlord_id = request.form.get('landlord_id')
-    property_description = request.form.get('property_description')
-
-    if not property_name or not landlord_id:
-        response = make_response(render_template('admin.html', pop_message=True, message="Property name and Landlord ID are required."))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', "Property name and Landlord ID are required.", expires=datetime.now() + timedelta(minutes=5))
-        return response
-
     try:
-        # Check if the landlord exists
-        landlord = db_session.query(User).filter_by(id=landlord_id).first()
-        if not landlord:
-            response = make_response(render_template('admin.html', pop_message=True, message="Landlord not found."))
-            response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-            response.set_cookie('message', "Landlord not found.", expires=datetime.now() + timedelta(minutes=5))
-            return response
+        # Get JSON data from the request
+        data = request.json
+        print(f"received data is : {data}")
 
-        # Create a new Property
+        property_name = data.get('property_name')
+        landlord_id = data.get('landlord_id')
+        property_description = data.get('property_description')
+
+        if not property_name or not landlord_id:
+            return jsonify({'success': False, 'error': 'All fields are required.'}), 400
+        
+        # check if landlord exists
+        landlord = db_session.query(User).filter_by(id=landlord_id).first()
+        if landlord == None:
+            return jsonify({'success':False, 'error':'Landlord does not exist'}), 400
+        
+        # create new property
         new_property = Property(
             name=property_name,
             landlord_id=landlord_id,
@@ -560,37 +577,46 @@ def add_landlord_property():
         db_session.commit()
 
         message = f"Property '{new_property.name}' added successfully for Landlord ID {landlord_id}."
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', message, expires=datetime.now() + timedelta(minutes=5))
-        return response
 
+        return jsonify({
+            'success':True,
+            'message':message,
+            'property':{
+                'id': new_property.id,
+                'name': new_property.name,
+                'landlord_id':new_property.landlord_id,
+                'description':new_property.description
+            }
+
+        })
+    
     except Exception as e:
+        # Rollback in case of an error
+        print(f"Error: {e}")
         db_session.rollback()
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', f"An error occurred: {str(e)}", expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/add-unit', methods=['POST'])
 def add_property_unit():
-    # Retrieve form data
-    property_id = request.form.get('property_id')
-    unit_house_number = request.form.get('unit_house_number')
-    unit_room_quantity = request.form.get('unit_room_quantity')
-    unit_house_description = request.form.get('unit_house_description')
-    unit_type = request.form.get('unit_type')
-
-    # Validate input
-    if not property_id or not unit_house_number:
-        response = make_response(render_template('admin.html', pop_message=True, message="Property ID and Unit Number are required."))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', "Property ID and Unit Number are required.", expires=datetime.now() + timedelta(minutes=5))
-        return response
-
+    # get json data 
     try:
-        # Create a new Unit instance
+        # Get JSON data from the request
+        data = request.json
+        print(f"received data is : {data}")
+
+        property_id = data.get('property_id')
+        unit_house_number = data.get('unit_house_number')
+        unit_room_quantity = data.get('unit_room_quantity')
+        unit_house_description = data.get('unit_house_description')
+        unit_type = data.get('unit_type')
+
+        # Validate input
+        if not property_id or not unit_house_number:
+            return jsonify({'success': False, 'error': 'All fields are required.'})
+        
+        
+        # Create a new Unit instance 
         new_unit = Unit(
             property_id=property_id,
             number=unit_house_number,
@@ -599,40 +625,46 @@ def add_property_unit():
             unit_description=unit_house_description,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
-        )
+            )
 
-        # Add the new unit to the database session and commit
+            # Add the new unit to the database session and commit
         db_session.add(new_unit)
         db_session.commit()
 
+            
         # Success message
-        message = f"Unit {unit_house_number} added successfully to Property ID {property_id}."
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', message, expires=datetime.now() + timedelta(minutes=5))
-        return response
-
+        return jsonify({
+            'success':True,
+            'message': f"Unit {unit_house_number} added successfully to Property ID {property_id}.",
+            'unit' : new_unit.to_dict()
+        })
+         
     except Exception as e:
-        # Rollback the session in case of an error
+        # Rollback in case of an error
+        print(f"Error: {e}")
         db_session.rollback()
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', f"An error occurred: {str(e)}", expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 
 @app.route('/add-lease', methods=['POST'])
 def add_lease():
     try:
-        # Retrieve form data
-        tenant_id = request.form.get('tenant_id')
-        unit_id = request.form.get('unit_id')
-        room_number = request.form.get('room_number')
-        rent_amount = request.form.get('rent_amount')
+        # Get JSON data from the request
+        data = request.json
+        print(f"Received data is: {data}")
 
-        # Parse the date strings into datetime objects
-        start_date_str = request.form.get('start_date')
-        end_date_str = request.form.get('end_date')
-        
+        tenant_id = data.get('tenant_id')
+        unit_id = data.get('unit_id')
+        room_number = data.get('room_number')
+        rent_amount = data.get('rent_amount')
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
+
+        # Validate input
+        if not tenant_id or not unit_id or not start_date_str or not end_date_str:
+            return jsonify({'success': False, 'error': 'All fields are required.'})
+
         # Convert the date strings to datetime objects
         start_date = datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M')
@@ -654,46 +686,39 @@ def add_lease():
         db_session.commit()
 
         # Success message
-        message = f"Lease added successfully for Unit ID {unit_id}."
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', message, expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({
+            'success': True,
+            'message': f"Lease added successfully for Unit ID {unit_id}.",
+            'lease': new_lease.to_dict()
+        })
 
     except Exception as e:
         # Rollback the session in case of an error
+        print(f"Error: {e}")
         db_session.rollback()
-        response = make_response(redirect(url_for('admin_home')))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', f"An error occurred: {str(e)}", expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 @app.route('/add-reminder', methods=['POST'])
 def add_reminder():
-    # Retrieve form data
-    lease_id = request.form.get('lease_id')
-    tenant_id = request.form.get('tenant_id')
-    amount_due = request.form.get('amount_due')
-    due_date = request.form.get('due_date')
-    payment_status = request.form.get('payment_status')
-    print("\n")
-    print(f"{lease_id}")
-    print(f"{tenant_id}")
-    print(f"{amount_due}")
-    print(f"{due_date}")
-    print(f"{payment_status}")
-
-    # Validate input
-    if not lease_id or not tenant_id or not amount_due or not due_date:
-        response = make_response(render_template('admin.html', pop_message=True, message="All fields are required."))
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', "All fields are required.", expires=datetime.now() + timedelta(minutes=5))
-        return response
-
     try:
-        # Convert due_date to a Python datetime object
-        due_date = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
+        # Get JSON data from the request
+        data = request.json
+        print(f"Received data is: {data}")
+
+        lease_id = data.get('lease_id')
+        tenant_id = data.get('tenant_id')
+        amount_due = data.get('amount_due')
+        due_date_str = data.get('due_date')
+        payment_status = data.get('payment_status')
+
+        # Validate input
+        if not lease_id or not tenant_id or not amount_due or not due_date_str:
+            return jsonify({'success': False, 'error': 'All fields are required.'})
+
+        # Convert the due_date string to datetime object
+        due_date = datetime.strptime(due_date_str, '%Y-%m-%dT%H:%M')
 
         # Create a new PaymentReminder instance
         new_reminder = PaymentReminder(
@@ -711,77 +736,61 @@ def add_reminder():
         db_session.commit()
 
         # Success message
-        message = f"Payment reminder for Lease ID {lease_id} added successfully."
-        response = make_response(redirect(url_for('admin_home')))  # Adjust redirection as needed
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', message, expires=datetime.now() + timedelta(minutes=5))
-        return response
+        return jsonify({
+            'success': True,
+            'message': f"Payment reminder for Lease ID {lease_id} added successfully.",
+            'reminder': new_reminder.to_dict()  # Assuming your model has a to_dict() method
+        })
 
     except Exception as e:
         # Rollback the session in case of an error
-        db_session.rollback()
-        response = make_response(redirect(url_for('admin_home')))  # Adjust redirection as needed
-        response.set_cookie('pop_message', 'true', expires=datetime.now() + timedelta(minutes=5))
-        response.set_cookie('message', f"An error occurred: {str(e)}", expires=datetime.now() + timedelta(minutes=5))
-        return response 
-
-
-@app.route('/update-reminder/<int:reminder_id>', methods=['POST'])
-def update_reminder_to_confirmation(reminder_id):
-    try:
-        # Get the current reminder from the database
-        reminder = db_session.query(PaymentReminder).get(reminder_id)
-        if not reminder:
-            return jsonify({'success': False, 'error': 'Reminder not found'}), 404
-
-        # Update the reminder's payment_confirmation_status to true
-        reminder.payment_confirmation_issued = 1
-
-        # Get the form data from the request body
-        data = request.get_json()
-        lease_id = data.get('lease_id')
-        amount_paid = data.get('amount_paid')
-        payment_type = data.get('payment_type')
-        payment_refference = data.get('payment_refference')
-        payment_description = data.get('payment_description')
-
-        # Create a new PaymentConfirmation record
-        new_confirmation = PaymentConfirmation(
-            lease_id=lease_id,
-            payment_reminder_id=reminder_id,
-            amount_paid=amount_paid,
-            payment_type=payment_type,
-            payment_refference=payment_refference,
-            Payment_description=payment_description
-        )
-
-        # Add the new record to the database session
-        db_session.add(new_confirmation)
-
-        # Commit the transaction to the database
-        db_session.commit()
-
-        # Return the newly created payment confirmation record as JSON
-        return jsonify({
-            'success': True,
-            'new_confirmation_id': new_confirmation.id,
-            'reminder_id': reminder_id,
-            'payment_confirmation': {
-                'id': new_confirmation.id,
-                'lease_id': new_confirmation.lease_id,
-                'amount_paid': new_confirmation.amount_paid,
-                'payment_type': new_confirmation.payment_type,
-                'payment_refference': new_confirmation.payment_refference,
-                'payment_description': new_confirmation.Payment_description,
-                'created_at': new_confirmation.created_at  # Assuming you have a created_at field
-            }
-        }), 200
-
-    except Exception as e:
-        # Rollback in case of an error
+        print(f"Error: {e}")
         db_session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+
+@app.route('/update-reminder/<int:reminder_id>', methods=['POST'])
+def update_reminder(reminder_id):
+    # Get JSON data from the request
+    data = request.get_json()
+
+    try:
+        # Fetch the PaymentReminder by the given reminder_id
+        reminder = db_session.query(PaymentReminder).get(reminder_id)
+        
+        if not reminder:
+            return jsonify({'success': False, 'error': 'Payment reminder not found'}), 404
+
+        # Update the payment confirmation status and any other necessary fields
+        reminder.payment_confirmation_issued = data.get('confirmation_status', False)
+        reminder.updated_at = datetime.utcnow()
+
+        # Create a new PaymentConfirmation record
+        new_payment_confirmation = PaymentConfirmation(
+            lease_id=data.get('lease_id'),
+            amount_paid=data.get('amount_paid'),
+            payment_type=data.get('payment_type'),
+            payment_refference=data.get('payment_refference'),  # Typo from frontend should be corrected if necessary
+            Payment_description=data.get('payment_description')
+        )
+
+        # Add the new confirmation and update the reminder in the session
+        db_session.add(new_payment_confirmation)
+        db_session.commit()
+
+        # Return the response containing the new PaymentConfirmation details
+        return jsonify({
+            'success': True,
+            'message': f"Payment reminder for ID {reminder_id} has been updated and payment confirmation added successfully.",
+            'payment_confirmation': new_payment_confirmation.to_dict()
+        }), 200
+
+    except Exception as e:
+        # Rollback the session if there is an error and return the error message
+        db_session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
 
 @app.route('/clear-confirmation/<int:confirmation_id>', methods=['POST'])
 def clear_confirmation(confirmation_id):
@@ -807,13 +816,33 @@ def clear_confirmation(confirmation_id):
 
 
 
-
 @app.route('/download-receipt/<int:confirmation_id>')
 def download_receipt(confirmation_id):
     # Fetch the confirmation record
     confirmation = db_session.query(PaymentConfirmation).get(confirmation_id)
     if not confirmation:
         return jsonify({'error': 'Payment confirmation not found'}), 404
+
+    # Check if a receipt already exists for the given confirmation_id
+    existing_receipt = db_session.query(Receipt).filter_by(confirmation_id=confirmation_id).first()
+
+    if not existing_receipt:
+        # If no receipt exists, create a new one
+        new_receipt = Receipt(
+            receipt_number=f"REC-{confirmation.id}-{int(confirmation.created_at.timestamp())}",
+            confirmation_id=confirmation_id,
+            lease_id=confirmation.lease_id,
+            amount=confirmation.amount_paid,
+            description=confirmation.Payment_description,
+            receipt_date=confirmation.created_at  # You might want to set this to the current time instead of confirmation.created_at
+        )
+        
+        # Add and commit the new receipt record to the database
+        db_session.add(new_receipt)
+        db_session.commit()
+    else:
+        # Use the existing receipt for PDF generation
+        new_receipt = existing_receipt
 
     # Render HTML template with confirmation data
     rendered_html = render_template('receipt_template.html', confirmation=confirmation)
@@ -831,6 +860,16 @@ def download_receipt(confirmation_id):
     # Return the generated PDF as a response
     return send_file(buffer, as_attachment=True, download_name=f"Receipt_{confirmation_id}.pdf", mimetype='application/pdf')
 
+
+@app.route('/admin-all-payment-reminders')
+def get_all_reminders():
+    reminders = db_session.query(PaymentReminder).all()
+    return render_template('admin_reminders.html', reminders=reminders, header_title="Payment Reminders")
+     
+@app.route('/admin-all-payment-confirmations')
+def get_all_confirmations():
+    confirmations = db_session.query(PaymentConfirmation).all()
+    return render_template('admin_confirmations.html', confirmations=confirmations, header_title="Payment Confiromations") 
 
 @app.route('/landlord')
 def landlord_home():
