@@ -1,5 +1,14 @@
 <h4>Success!</h4>
 <p>{{ message }}</p>
+
+{% if user_info['user_type'] == 'Landlord' %}
+    <p>Master Landlord, Id : {{user_info['user_id']}}</p>
+    <div class="button-container">
+        <a href="{{ dashboard_url }}" class="button" style="text-decoration: none;">Dashboard</a>
+    </div>
+{% endif%}
+{% if user_info['user_type'] != 'Landlord' %}
 <div class="button-container">
     <a href="{{ dashboard_url }}" class="button" style="text-decoration: none;">Dashboard</a>
 </div>
+{% endif%}

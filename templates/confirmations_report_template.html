@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmations Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            word-wrap: break-word;
+            table-layout: fixed;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 6px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            font-size:x-small;
+        }
+        .report-info {
+            margin: 20px 0;
+            font-size: 12px;
+        }
+        /* Ensure the table content fits within the page */
+        td {
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-all;
+            font-size: small;
+        }
+    </style>
+</head>
+<body>
+    <h2>Payment Confirmations Report</h2>
+    <p class="report-info">Date Generated: {{ report_date }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 17.5%;">Lease ID</th>
+                <th style="width: 17.5%;">Tenant</th>
+                <th style="width: 15%;">Amount Paid</th>
+                <th style="width: 20%;">Payment Date</th>
+                <th style="width: 25%;">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for confirmation in confirmations %}
+            <tr>
+                <td>{{ confirmation.id }}</td>
+                <td>{{ confirmation.lease_id }}</td>
+                <td>{{lease_tenant_info[confirmation.lease_id]}}</td>
+                <td>{{ confirmation.amount_paid }}</td>
+                <td>{{ confirmation.created_at }}</td>
+                <td>{{ confirmation.Payment_description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

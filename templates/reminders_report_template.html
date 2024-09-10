@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reminders Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h2 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .report-info {
+            margin: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Payment Reminders Report</h2>
+    <p class="report-info">Report generated on: {{ report_date.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tenant ID</th>
+                <th>Lease ID</th>
+                <th>Amount Due</th>
+                <th>Due Date</th>
+                <th>Payment Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reminder in reminders %}
+            <tr>
+                <td>{{ reminder.id }}</td>
+                <td>{{ reminder.tenant_id }}</td>
+                <td>{{ reminder.lease_id }}</td>
+                <td>{{ reminder.amount_due }}</td>
+                <td>{{ reminder.due_date }}</td>
+                <td>{{ 'Paid' if reminder.payment_status else 'Pending' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

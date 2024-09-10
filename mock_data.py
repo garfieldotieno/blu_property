@@ -1,7 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, User, Property, Unit, Lease, PaymentReminder, PaymentConfirmation, Receipt
+from models import License, LicenseResetKey, Base, User, Property, Unit, Lease, PaymentReminder, PaymentConfirmation, Receipt
+from new_server import create_license, fetch_licenses, fetch_license, delete_license, reset_license
+from new_server import randomString, timedelta 
 import datetime
+
+
+
 from passlib.context import CryptContext
 import random
 import string
@@ -57,6 +62,10 @@ def populate_mock_data():
             User(uid=generate_uid("Landlord"), user_name="LandlordThree", email_or_phone="landlord3@example.com", password_hash=hash_password("landlordpass3"), user_type="Landlord")
         ]
         session.add_all(landlords)
+
+        licenses = []
+        
+        session.add_all(licenses)
 
         # tenants = [
         #     User(uid=generate_uid("Tenant"), user_name="TenantOne", email_or_phone="tenant1@example.com", password_hash=hash_password("tenantpass1"), user_type="Tenant"),
@@ -287,6 +296,49 @@ def generate_july_receipts_2():
     finally:
         session.close()
 
+
+def test_create_license(input_license_type, days):
+    key = randomString(16)
+    print(f"generating license_key : {key}")
+    create_license({"license_key":key, "license_type":input_license_type, "license_status":True, "license_expiry":datetime.datetime.now() + timedelta(days=days)})
+    
+
+def test_validate_reset_key(input_key_value, input_license_type):
+    print("Validating reset key")
+
+    # use LicenseResetKey class to validate the key
+    if LicenseResetKey.is_valid_key(input_key_value):
+        # If the key is valid, redirect to /
+        print("Valid reset key")
+        # check if License table has any record,
+        # if yes, delete all records and create new record
+        # if no, create new record
+        if input_license_type == "Full":
+            days = 366
+        else:
+            days = 183
+
+        l = fetch_licenses()
+ 
+        if l == []:
+            # if input_license_type == "Full", days = 366 else 188
+            create_license({"license_key":randomString(16), "license_type":input_license_type, "license_status":True, "license_expiry":datetime.datetime.now() + timedelta(days=days)})
+        else:
+            print(f"during reseting l was {l}")
+            delete_license(1)
+            create_license({"license_key":randomString(16), "license_type":input_license_type, "license_status":True, "license_expiry":datetime.datetime.now() + timedelta(days=days)})
+
+        
+        return {
+            "message":"License reset successful",
+        }
+        
+    else:
+        # If the key is invalid, load the flash message and redirect to /
+        return {
+            "message":"Invalid reset key"
+        }
+     
 
 if __name__ == "__main__":
     init_db()

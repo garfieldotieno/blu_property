@@ -20,12 +20,12 @@ from xhtml2pdf import pisa
 from io import BytesIO
 
 from io import BytesIO
-from models import User, Otp, Session, Property, Unit, Lease, PaymentReminder, PaymentConfirmation, Receipt 
+from models import User, Otp, Session, Property, Unit, Lease, PaymentReminder, PaymentConfirmation, Receipt, License, LicenseResetKey
 import random 
 import pydantic
 import yaml
 import hashlib
-import random 
+from random import choice
 import os
 
 
@@ -33,6 +33,7 @@ app = Flask(__name__)
 app.secret_key = b"Z'(\xac\xe1\xb3$\xb1\x8e\xea,\x06b\xb8\x0b\xc0"
 CORS(app)
 
+ 
 
 
 DATABASE_URL = "sqlite:///property.db"  # Ensure this matches your DATABASE_URL
@@ -49,6 +50,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "your_jwt_secret_key"
 ALGORITHM = "HS256"
 
+
+def load_shop_data():
+    json_file = open("shop_config.json")
+    data = json.load(json_file)
+    print('shop config,', data)
+    print(type(data))
+    return data
+
+
 @app.template_filter()
 def numberFormat(value):
     return format(int(value), 'd')
@@ -60,11 +70,21 @@ def randomString(stringLength=100):
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 session_middleware = {
-    "Anonymous": {"allowed_routes": ['/', '/about', '/invalid', '/register', '/login', '/default-content', '/about']},
-    "Admin" : {"allowed_routes":['/admin']},
-    "LandLord":{"allowed_routes":['/landlord',]},
-    "Tenant" : {"allowed_routes":['/tenant']}
+    "Anonymous": {
+        "allowed_routes": ['/', '/about', '/invalid', '/register', '/login', '/default-content', '/about']
+    },
+    "Admin": {
+        "allowed_routes": ['/admin']
+    },
+    "LandLord": {
+        # Dynamically generate routes from /landlord/2 to /landlord/100
+        "allowed_routes": ['/landlord'] + [f'/landlord/{i}' for i in range(2, 101)]
+    },
+    "Tenant": {
+        "allowed_routes": ['/tenant']
+    }
 }
+
 
 def generate_login_session(user_type):
     """Generate a unique and secure login session token based on user type and randomness."""
@@ -164,7 +184,8 @@ def verify_user_credentials(email_or_phone: str, password: str):
             "user_name": user.user_name,
             "user_type": user.user_type,
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "user_id":user.id
         }
     
     else:
@@ -174,6 +195,106 @@ def verify_user_credentials(email_or_phone: str, password: str):
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
+
+
+def create_license(payload):
+    # update so that there can only be one record
+    license = License()
+    license.uid = randomString(16)
+    license.license_key = payload['license_key']
+    license.license_type = payload['license_type']
+    license.license_status = payload['license_status']
+    license.license_expiry = payload['license_expiry']
+
+    # check length of records, if empty add, if one, delete and create new
+    if db_session.query(License).all() == []:
+        db_session.add(license)
+        db_session.commit()
+        return {"status":True}
+    else:
+        delete_license(1)
+        db_session.add(license)
+        db_session.commit()
+        return {"status":True}
+
+
+def fetch_licenses():
+    return db_session.query(License).all()
+
+
+def fetch_license(uid):
+    return db_session.query(License).filter_by(uid=uid).first()
+    
+
+def delete_license(license_id):
+    license = db_session.query(License).filter_by(id=license_id).first()
+    db_session.delete(license)
+    return db_session.commit()
+
+
+def update_license(payload):
+    license = db_session.query(License).filter_by(license_key=payload['license_key']).first()
+    for key in payload:
+        if key != 'license_key':
+            setattr(license, key, payload[key])
+    license.updated_at = datetime.now()
+    db_session.add(license)
+    db_session.commit()
+    return license
+
+
+# reset_license function here takes the 16digit value and checks against hashed equivalent in the .pos_key.yml file
+# if the hashed value is found, it is deleted and the license is reset be cr4eating new entry in the database
+# if the hashed value is not found, the function returns false
+def reset_license(payload):
+    license = db_session.query(License).filter_by(license_key=payload['license_key']).first()
+    if license is not None:
+        db_session.delete(license)
+        db_session.commit()
+        create_license(payload)
+        return {"status":True}
+    else:
+        return {"status":False}
+
+
+# add validate license reset key
+@app.route("/validate_reset_key", methods=["POST"])
+def validate_reset_key():
+    print("Validating reset key")
+    input_key_value = request.form['reset_key']
+    input_license_type = request.form['license_type']
+
+    # use LicenseResetKey class to validate the key
+    if LicenseResetKey.is_valid_key(input_key_value):
+        # If the key is valid, redirect to /
+        print("Valid reset key")
+        # check if License table has any reocrd,
+        # if yes, delete all records and create new record
+        # if no, create new record
+        if input_license_type == "Full":
+            days = 366
+        else:
+            days = 183
+
+        l = fetch_licenses()
+
+        if l == []:
+            # if input_license_type == "Full", days = 366 else 188
+            create_license({"license_key":randomString(16), "license_type":input_license_type, "license_status":True, "license_expiry":datetime.now() + timedelta(days=days)})
+        else:
+            print(f"during reseting l was {l}")
+            delete_license(1)
+            create_license({"license_key":randomString(16), "license_type":input_license_type, "license_status":True, "license_expiry":datetime.now() + timedelta(days=days)})
+
+        session['session_flash_message'] = bytes("License reset successful", 'utf-8')
+
+        return redirect("/")
+        
+    else:
+        # If the key is invalid, load the flash message and redirect to /
+        print("Invalid reset key")
+        session['session_flash_message'] = bytes("Invalid reset key", 'utf-8')
+        return redirect("/")
 
 
 @app.route('/')
@@ -226,9 +347,13 @@ def process_login():
 
         # Format the dashboard URL based on user type
         user_type = user_info['user_type'].lower()
-        dashboard_url = f"/login-{user_type}"
+        if user_type == "landlord":
+            dashboard_url = f"/login-{user_type}/{user_info['user_id']}"
+            print(f"generated landlord url is : {dashboard_url}") 
+        else:
+            dashboard_url = f"/login-{user_type}"
 
-        resp = make_response(render_template('proceed_login.html', message=f"Proceed to {user_info['user_type']} dashboard", dashboard_url=dashboard_url))
+        resp = make_response(render_template('proceed_login.html', message=f"Proceed to {user_info['user_type']} dashboard", dashboard_url=dashboard_url, user_info=user_info))
         resp.set_cookie('login_session', session_token, httponly=True)
 
         return resp
@@ -247,11 +372,12 @@ def test_admin_access():
         return "Unauthorized Access", 403
 
 
-@app.route('/login-landlord')
-def test_landlord_access():
+@app.route('/login-landlord/<int:user_id>')
+def test_landlord_access(user_id):
+    print(f"about to set landlord session with id : {user_id}")
     if verify_login_session('Landlord'):
         switch_session_profile('Landlord')
-        return redirect('/landlord')
+        return redirect(f'/landlord/{user_id}')
     else:
         return "Unauthorized Access", 403
 
@@ -323,15 +449,29 @@ def get_property_units(property_id):
 
 @app.route('/admin-unit-leases/<int:unit_id>', methods=['GET'])
 def get_unit_lease(unit_id):
+    # Fetch the unit and its related property
     unit = db_session.query(Unit).filter_by(id=unit_id).first()
     back_property_id = unit.property_id
 
+    # Fetch all leases for the unit
     leases = db_session.query(Lease).filter_by(unit_id=unit_id).all()
     leases2 = db_session.query(Lease).filter_by(unit_id=unit_id).all()
     print(f"fetched lease for unit is {leases}")
     for lease in leases2:
         print(f"fetched lease dict is : {lease.to_dict()}")
-    return render_template('admin_leases.html', leases=leases, header_title="Leases", front_unit_id=unit_id, back_property_id=back_property_id)
+
+    # Fetch all users for the tenant dropdown
+    users = db_session.query(User).filter_by(user_type="Tenant").all()
+
+    # Pass the leases and users to the template
+    return render_template(
+        'admin_leases.html', 
+        leases=leases, 
+        users=users,  # Pass the users for the dropdown
+        header_title="Leases", 
+        front_unit_id=unit_id, 
+        back_property_id=back_property_id
+    )
 
 @app.route('/admin-lease-payments/<int:lease_id>/<int:tenant_id>', methods=['GET'])
 def get_lease_payments(lease_id, tenant_id):
@@ -342,6 +482,7 @@ def get_lease_payments(lease_id, tenant_id):
     print(f"fetched reminders for lease : {lease_id} are : {payment_reminders}\n")
     print(f"fetched confirmations for lease : {lease_id} are : {payment_confirmations}\n")
     return render_template('admin_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, back_unit_id=back_unit_id)
+
 
 @app.route('/admin-add-user')
 def admin_add_user():
@@ -763,7 +904,8 @@ def update_reminder(reminder_id):
             return jsonify({'success': False, 'error': 'Payment reminder not found'}), 404
 
         # Update the payment confirmation status and any other necessary fields
-        reminder.payment_confirmation_issued = data.get('confirmation_status', False)
+        # reminder.payment_confirmation_issued = data.get('confirmation_status', False)
+        reminder.payment_confirmation_issued = data.get('confirmation_status')
         reminder.updated_at = datetime.utcnow()
 
         # Create a new PaymentConfirmation record
@@ -794,24 +936,36 @@ def update_reminder(reminder_id):
 
 @app.route('/clear-confirmation/<int:confirmation_id>', methods=['POST'])
 def clear_confirmation(confirmation_id):
+    print(f"recieved confirmation id is : {confirmation_id}")
     try:
         # Get the payment confirmation from the database
         confirmation = db_session.query(PaymentConfirmation).get(confirmation_id)
         if not confirmation:
             return jsonify({'success': False, 'error': 'Confirmation not found'}), 404
 
-        # update the payment_reminder.payment_status
+        # Find the associated PaymentReminder
         reminder = db_session.query(PaymentReminder).filter_by(lease_id=confirmation.lease_id).first()
-        reminder.payment_status = True 
 
-        # Update the payment_cleared status to True
+        if reminder:
+            print(f"reminder found, and payment_status is  : {reminder.payment_status}")
+            # update the payment_reminder.payment_status if the reminder exists
+            reminder.payment_status = True
+        else:
+
+            return jsonify({'success': False, 'error': 'Payment reminder not found for lease'}), 404
+
+        # Update the payment_cleared status to True for the confirmation
         confirmation.payment_cleared = True
+
+        # Commit the transaction
         db_session.commit()
 
         return jsonify({'success': True, 'confirmation_id': confirmation_id}), 200
 
     except Exception as e:
         db_session.rollback()
+        # Log the error for debugging
+        print(f"Error in clearing confirmation: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -826,15 +980,22 @@ def download_receipt(confirmation_id):
     # Check if a receipt already exists for the given confirmation_id
     existing_receipt = db_session.query(Receipt).filter_by(confirmation_id=confirmation_id).first()
 
+    def generate_alpha_numeric(length=6):
+        """Generates a random alpha-numerical string."""
+        characters = string.ascii_uppercase + string.digits
+        return ''.join(choice(characters) for _ in range(length))
+
     if not existing_receipt:
-        # If no receipt exists, create a new one
+        # If no receipt exists, create a new one with an alpha-numeric receipt number
+        receipt_number = f"REC-{generate_alpha_numeric(4)}-{confirmation.id}"
+
         new_receipt = Receipt(
-            receipt_number=f"REC-{confirmation.id}-{int(confirmation.created_at.timestamp())}",
+            receipt_number=receipt_number,
             confirmation_id=confirmation_id,
             lease_id=confirmation.lease_id,
             amount=confirmation.amount_paid,
             description=confirmation.Payment_description,
-            receipt_date=confirmation.created_at  # You might want to set this to the current time instead of confirmation.created_at
+            receipt_date=confirmation.created_at  # Alternatively, use current timestamp here
         )
         
         # Add and commit the new receipt record to the database
@@ -844,8 +1005,8 @@ def download_receipt(confirmation_id):
         # Use the existing receipt for PDF generation
         new_receipt = existing_receipt
 
-    # Render HTML template with confirmation data
-    rendered_html = render_template('receipt_template.html', confirmation=confirmation)
+    # Render HTML template with confirmation and receipt data
+    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt)
 
     # Convert HTML to PDF
     buffer = BytesIO()
@@ -858,7 +1019,7 @@ def download_receipt(confirmation_id):
     buffer.seek(0)
 
     # Return the generated PDF as a response
-    return send_file(buffer, as_attachment=True, download_name=f"Receipt_{confirmation_id}.pdf", mimetype='application/pdf')
+    return send_file(buffer, as_attachment=True, download_name=f"Receipt_{new_receipt.receipt_number}.pdf", mimetype='application/pdf')
 
 
 @app.route('/admin-all-payment-reminders')
@@ -871,19 +1032,159 @@ def get_all_confirmations():
     confirmations = db_session.query(PaymentConfirmation).all()
     return render_template('admin_confirmations.html', confirmations=confirmations, header_title="Payment Confiromations") 
 
-@app.route('/landlord')
-def landlord_home():
+
+@app.route('/generate-reminders-report', methods=['POST'])
+def all_reminders_report_pdf():
+    try:
+        print("PDF generation request received")
+        # Query all payment reminders from the database
+        reminders = db_session.query(PaymentReminder).all()
+
+        # Render the reminders in an HTML template
+        rendered_html = render_template('reminders_report_template.html', reminders=reminders, report_date=datetime.now())  # Fix this line
+
+        # Convert the rendered HTML to a PDF
+        pdf = BytesIO()  # Create an in-memory buffer
+        pisa_status = pisa.CreatePDF(BytesIO(rendered_html.encode('utf-8')), dest=pdf)
+
+        # Check for any errors in PDF generation
+        if pisa_status.err:
+            print(f"Error in PDF generation: {pisa_status.err}")
+            return jsonify({'error': 'Error generating PDF'}), 500
+
+        # Move the buffer's position to the start
+        pdf.seek(0)
+
+        # Return the generated PDF as a downloadable response
+        generated_name = f"Reminders_Report{randomString(10)}.pdf"
+        print(f"generated name is : {generated_name}")
+        return send_file(pdf, as_attachment=True, download_name=generated_name, mimetype='application/pdf')
+
+    except Exception as e:
+        print(f"Error generating reminders report: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generate-confirmations-report', methods=['POST'])
+def all_confirmations_report_pdf():
+    try:
+        print("PDF generation request for confirmations received")
+
+        # Query all payment confirmations from the database
+        confirmations = db_session.query(PaymentConfirmation).all()
+
+        # lease_id:tenant_info dict
+        lease_tenant_info = {}
+        for confirmation in confirmations:
+            lease = db_session.query(Lease).filter_by(id=confirmation.lease_id).first()
+            user = db_session.query(User).filter_by(id=lease.tenant_id).first()
+            print(f"fetched user is : {user}")
+            lease_tenant_info[confirmation.lease_id] = user.email_or_phone
+
+        print(f"generated info dict is : {lease_tenant_info}")
+
+        # Render the confirmations in an HTML template
+        rendered_html = render_template('confirmations_report_template.html', confirmations=confirmations, report_date=datetime.now(), lease_tenant_info=lease_tenant_info)
+
+        # Convert the rendered HTML to a PDF
+        pdf = BytesIO()  # Create an in-memory buffer
+        pisa_status = pisa.CreatePDF(BytesIO(rendered_html.encode('utf-8')), dest=pdf)
+
+        # Check for any errors in PDF generation
+        if pisa_status.err:
+            print(f"Error in PDF generation: {pisa_status.err}")
+            return jsonify({'error': 'Error generating PDF'}), 500
+
+        # Move the buffer's position to the start
+        pdf.seek(0)
+
+        # Return the generated PDF as a downloadable response
+        generated_name = f"Confirmations_Report:{randomString(10)}.pdf"
+        print(f"generated name is : {generated_name}")
+
+        return send_file(pdf, as_attachment=True, download_name=generated_name, mimetype='application/pdf')
+
+    except Exception as e:
+        print(f"Error generating confirmations report: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/landlord/<int:user_id>')
+def landlord_home(user_id):
     query = is_active()
     print(f"query return type is, {type(query)}")
     print(f"query return is : {query}")
     if query['status'] and request.path in query['middleware']['allowed_routes']:
         print(request.path)
+        landlord = db_session.query(User).filter_by(id=user_id).first()
+        print(f"at login, fetched landlord with id : {landlord.id}, and email_or_phone value : {landlord.email_or_phone}")
         response = make_response(render_template(
         'landlord.html',
+        landlord=landlord
         ))  
         return response
     return redirect(query['middleware']['allowed_routes'][0])
 
+
+@app.route('/landlord-tenants/<int:user_id>') 
+def landlord_tenants(user_id):
+    print(f"landlord properties endpoint : {request.endpoint}, is called")
+    users = db_session.query(User).all()
+    return render_template('landlord_users.html', users=users, header_title="Users", user_id=user_id)
+
+@app.route('/landlord-properties/<int:user_id>')
+def landlord_properties(user_id):
+    print(f"landlord properties endpoint : {request.endpoint}, is called")
+    properties = db_session.query(Property).filter_by(landlord_id=user_id).all()
+    print(f"fetched properties is : {properties}")
+    return render_template('landlord_properties.html', properties=properties, header_title="Properties", front_user_id=user_id)
+     
+
+@app.route('/landlord-property-units/<int:property_id>')
+def landlord_property_units(property_id):
+    current_property = db_session.query(Property).filter_by(id=property_id).first()
+    
+    back_user_id = current_property.landlord_id
+    units = db_session.query(Unit).filter_by(property_id=property_id).all()
+    print(f"fetched units for property id : {property_id} is : {units}") 
+    return render_template('landlord_units.html', units=units, header_title="Units", front_property_id=property_id, back_user_id=back_user_id)
+     
+
+@app.route('/landlord-unit-leases/<int:unit_id>')
+def landlord_unit_leases(unit_id):
+    unit = db_session.query(Unit).filter_by(id=unit_id).first()
+    back_property_id = unit.property_id
+
+    leases = db_session.query(Lease).filter_by(unit_id=unit_id).all()
+    leases2 = db_session.query(Lease).filter_by(unit_id=unit_id).all()
+    print(f"fetched lease for unit is {leases}")
+    for lease in leases2:
+        print(f"fetched lease dict is : {lease.to_dict()}")
+    return render_template('landlord_leases.html', leases=leases, header_title="Leases", front_unit_id=unit_id, back_property_id=back_property_id)
+     
+
+@app.route('/landlord-lease-payments/<int:lease_id>/<int:tenant_id>')
+def landlord_lease_payments(lease_id,tenant_id):
+    lease = db_session.query(Lease).filter_by(id=lease_id).first()
+    back_unit_id = lease.unit_id
+    payment_reminders = db_session.query(PaymentReminder).filter_by(lease_id=lease_id).all()
+    payment_confirmations = db_session.query(PaymentConfirmation).filter_by(lease_id=lease_id).all()
+    print(f"fetched reminders for lease : {lease_id} are : {payment_reminders}\n")
+    print(f"fetched confirmations for lease : {lease_id} are : {payment_confirmations}\n")
+    return render_template('landlord_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, back_unit_id=back_unit_id)
+ 
+
+@app.route('/landlord-payment-reminders/<int:user_id>')
+def get_all_landlord_reminders(user_id):
+    reminders = db_session.query(PaymentReminder).all()
+    return render_template('landlord_reminders.html', reminders=reminders, header_title="Payment Reminders", user_id=user_id)
+     
+
+@app.route('/landlord-payment-confirmations/<int:user_id>')
+def get_all_landlord_confirmations(user_id):
+    confirmations = db_session.query(PaymentConfirmation).all()
+    return render_template('landlord_confirmations.html', confirmations=confirmations, header_title="Payment Confirmations", user_id=user_id) 
 
 
 if __name__ == '__main__':

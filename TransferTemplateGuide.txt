@@ -1,0 +1,59 @@
+Back Navigation Variables
+	- admin.html : None, url:'/admin'
+	
+	- AdminHome > Users : front_users, front_header_title, url:'/admin-users'
+	- AdminHome < Users : None
+	
+	- Users > Properties : front_user_id[landlord], front_properties, front_header_title, url:'/admin-user-properties/<int:user_id>'
+	- Users < Properties : None
+	
+	- Properties > Units : front_property_id, front_units, front_header_title, back_user_id[landlord], url:'/admin-property-units/<int:property_id>'
+	- Properties < Units : back_user_id[landlord]
+	
+	- Units > Lease : front_unit_id, front_leases, front_header_title, back_property_id, url:'/admin-unit-leases/<int:unit_id>'
+	- Units < Lease : back_property_id
+	
+	- Lease > Payments : front_lease_id, front_payment_reminders, front_payment_confirmations, front_header_title, back_unit_id, url:'/admin-lease-payments/<int:lease_id>/<int:tenant_id>'
+	- Lease < Payments : back_lease_id
+
+
+Compatibility Test
+	- landlord.html : None, url:'/landlord'
+	
+	- LandLordHome > Tenants : front_user_id[landlord], front_tenants, front_header_title, url:'/landlord-tenants'
+	- LandLordHome < Tenants : None
+	
+	- LandLordHome > Properties : front_user_id[landlord], front_properties, front_header_title, url:'/landlord-properties/<int:user_id>'
+	- LandLordHome < Properties : None
+	
+	- Properties > Units : front_property_id, front_units, front_header_title, url:'/landlord-property-units/<int:property_id>'
+	- Properties < Units : back_user_id[landlord]
+	
+	- Units > Lease : front_unit_id, front_leases, front_header_title, url:'/landlord-unit-leases/<int:unit_id>'
+	- Units < Lease : back_property_id
+	
+	- Lease > Payments : front_lease_id, front_payment_reminders, front_payment_confirmations, front_header_title, url:'/landlord-lease-payments/<int:lease_id>/<int:tenant_id>'
+	- Lease < Payments : back_lease_id
+
+
+Common Utility Routes :
+	- /add-user || tenant
+	
+	- /add-property 
+	- /delete-property/<int:property_id>
+
+	- /add-unit
+	- /delete-unit/<int:property_id>
+
+	- /add-lease
+	- /delete-lease/<int:lease_id>
+
+	- /add-reminder 
+	- /update-reminder/<int:reminder_id> + add confirmation
+	- /delete-reminder/<int:reminder_id>
+
+	- /clear-confirmation/<int:confirmation_id>
+	- /download-receipt/<int:confirmation_id>
+
+	- /generate-reminders-report
+	- /generate-confirmations-report

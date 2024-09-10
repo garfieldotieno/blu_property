@@ -2,6 +2,9 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Foreign
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
+import pydantic
+import hashlib
+import yaml 
 
 Base = declarative_base()
 
@@ -67,7 +70,87 @@ class Session(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
+
+class License(Base):
+    __tablename__ = "License"
+
+    id = Column(Integer, primary_key=True)
+    uid = Column(String(10), unique=True, nullable=False)
+    license_key = Column(String(20), unique=True, nullable=False)
+    license_type = Column(String(10), nullable=False)
+    license_status = Column(Boolean, nullable=False)
+    license_expiry = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now())
+    updated_at = Column(DateTime, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return f"License(id={self.id}, uid='{self.uid}', license_key='{self.license_key}', license_type='{self.license_type}', license_status='{self.license_status}', license_expiry='{self.license_expiry}', created_at={self.created_at}, updated_at={self.updated_at})"
+
+
+class LicenseResetKey(pydantic.BaseModel):
+    license_key: str
+
+    @staticmethod
+    def save_key(license_key):
+        # Hash the license key using SHA-256
+        hashed_key = hashlib.sha256(license_key.encode()).hexdigest()
+        
+        # Load existing keys from .pos_key.yml if it exists
+        existing_keys = LicenseResetKey.fetch_keys()
+
+        # check if existing list is of length 20
+        # if length is 20, delete the entire list and append the new, otherwise append to existing list
+        if len(existing_keys) == 20:
+            existing_keys = []
+            existing_keys.append(hashed_key)
+
+        else:
+            existing_keys.append(hashed_key)
+        
+             # Save the updated list of hashed keys back to .pos_key.yml
+        with open('.pos_keys.yml', 'w') as file:
+            yaml.dump(existing_keys, file)
+
+
+    @staticmethod
+    def fetch_keys():
+        try:
+            with open('.pos_keys.yml', 'r') as file:
+                return yaml.safe_load(file) or []
+        except FileNotFoundError:
+            # If the file does not exist, return an empty list
+            return []
+
+    @staticmethod
+    def delete_key(license_key):
+        # Hash the license key to match the stored format
+        hashed_key = hashlib.sha256(license_key.encode()).hexdigest()
+
+        # Fetch the existing keys
+        existing_keys = LicenseResetKey.fetch_keys()
+
+        # Remove the hashed key if it exists
+        if hashed_key in existing_keys:
+            existing_keys.remove(hashed_key)
+
+            # Save the updated list of hashed keys back to .pos_key.yml
+            with open('.pos_keys.yml', 'w') as file:
+                yaml.dump(existing_keys, file)
+
+    @staticmethod
+    def is_valid_key(license_key):
+        # Hash the license key to match the stored format
+        hashed_key = hashlib.sha256(license_key.encode()).hexdigest()
+
+        # Fetch the existing keys
+        existing_keys = LicenseResetKey.fetch_keys()
+
+        # Check if the hashed key exists in the list
+        return hashed_key in existing_keys
+
+
 class Property(Base):
+
     __tablename__ = 'properties'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -92,6 +175,7 @@ class Property(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "units": [unit.id for unit in self.units]  # List of related unit IDs
         }
+
 
 class Unit(Base):
     __tablename__ = 'units'

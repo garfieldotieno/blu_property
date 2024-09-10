@@ -1,8 +1,7 @@
 <!-- Property Management Section -->
 <div class="back-container">
     <div class="button-container">
-        
-        <button class="button" hx-get="http://localhost:5000/admin-users" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Back</button>
+        <a href="http://localhost:5000/landlord/{{front_user_id}}" class="button" style="text-decoration: none;">Back</a>
     </div>
 </div>
 <br>
@@ -31,11 +30,11 @@
             
             <td>
                 <div class="table-button-container">
-                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-property-units/{{property.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Units</a>
+                    <a href="" class="table-button" hx-get="http://localhost:5000/landlord-property-units/{{property.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Units</a>
                 </div>
-                <!-- <div class="table-button-container">
+                <div class="table-button-container">
                     <button class="table-button" onclick="deleteProperty('{{ property.id }}')">Delete</button>
-                </div> -->
+                </div>
             </td>
         </tr>
         {% endfor %}
@@ -172,7 +171,7 @@
                                 <td>${data.property.landlord_id}</td>
                                 <td>
                                     <div class="table-button-container">
-                                        <a href="" class="table-button" hx-get="http://localhost:5000/admin-property-units/${data.property.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Units</a>
+                                        <a href="" class="table-button" hx-get="http://localhost:5000/landlord-property-units/${data.property.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Units</a>
                                     </div>
                                     <div class="table-button-container">
                                         <button class="table-button" onclick="deleteProperty('${ data.property.id}')">Delete</button>

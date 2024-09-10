@@ -1,7 +1,7 @@
     <!-- User Management Section -->
     <div class="back-container">
         <div class="button-container">
-            <a href="/" class="button" style="text-decoration: none;">Back</a>
+            <a href="/landlord/{{user_id}}" class="button" style="text-decoration: none;">Back</a>
         </div>
         
     </div>
@@ -20,29 +20,24 @@
         </thead>
         <tbody>
             {% for user in users %}
-            <tr id="user-{{ user.id }}">
-                <td>{{ user.id }}</td>
-                <td>{{ user.user_name }}</td>
-                <td>{{ user.email_or_phone }}</td>
-                <td>{{ user.user_type }}</td>
-                <td>
-                    {% if user.user_type != 'Admin' %}
+            {% if user.user_type != 'Admin' %}
                         {% if user.user_type == 'Landlord' %}
-                            <div class="table-button-container">
-                                <a href="" class="table-button" hx-get="http://localhost:5000/admin-user-properties/{{user.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Properties</a>
-                            </div>
+                            
                         {% endif %}
+                        
                         {% if user.user_type == 'Tenant' %}
-                            <!-- <div class="table-button-container">
-                                <a href="" class="table-button">Leases</a>
-                            </div> -->
+                        <tr id="user-{{ user.id }}">
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.user_name }}</td>
+                            <td>{{ user.email_or_phone }}</td>
+                            <td>{{ user.user_type }}</td>
+                            <td>
+                                
+                            </td>
+                        </tr>   
                         {% endif %}
-                        <div class="table-button-container">
-                            <button class="table-button" onclick="deleteUser('{{ user.id }}')">Delete</button>
-                        </div>
-                    {% endif %}
-                </td>
-            </tr>        
+            {% endif %}
+                 
             {% endfor %}
         </tbody>
     </table>
@@ -50,7 +45,7 @@
     <br>
     <div class="back-container">
         <div class="button-container">
-            <button class="button" onclick="loadAddUserFormModal()">Add User</button>
+            <button class="button" >Add User</button>
         </div>
     </div>
     <div id="dashboard-container" class="dashboard-container">

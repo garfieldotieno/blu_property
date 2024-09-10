@@ -1,12 +1,17 @@
 <!-- Lease Management Section -->
 <div class="back-container">
     <div class="button-container">
-        <button class="button" hx-get="http://localhost:5000/admin-property-units/{{back_property_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Back</button>
+        <button class="button" hx-get="http://localhost:5000/admin-property-units/{{back_property_id}}" 
+            hx-target="#dashboard-container" 
+            hx-swap="innerHTML" 
+            onclick="activateDashboardContainer()">Back
+        </button>
     </div>
 </div>
-<br>
-<br>
-<h4 style="text-align: center;" id="value_header">{{header_title}}:Unit ID:{{front_unit_id}}</h4>
+
+<h4 style="text-align: center;" id="value_header">{{header_title}}: Unit ID: {{front_unit_id}}</h4>
+
+<!-- Lease Table -->
 <table id="example" class="display" style="width:100%">
     <thead>
         <tr>
@@ -32,7 +37,11 @@
             <td>{{lease.rent_amount}}</td>
             <td>
                 <div class="table-button-container">
-                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/{{lease.id}}/{{lease.tenant_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Payments</a>
+                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/{{lease.id}}/{{lease.tenant_id}}" 
+                        hx-target="#dashboard-container" 
+                        hx-swap="innerHTML" 
+                        onclick="activateDashboardContainer()">Payments
+                    </a>
                 </div>
                 <div class="table-button-container">
                     <button class="table-button" onclick="deleteLease('{{ lease.id }}')">Delete</button>
@@ -42,36 +51,36 @@
         {% endfor %}
     </tbody>
 </table>
-<br>
-<br>
+
+<!-- Add Lease Button and Modal -->
 <div class="back-container">
     <div class="button-container">
         <button class="button" onclick="loadAddLeaseFormModal()">Add Lease</button>
     </div>
 </div>
-<div id="dashboard-container" class="dashboard-container">
-    <!-- Placeholder for dynamic content, such as the add lease form -->
-</div>
 
-<div class="modal" id="add_lease_modal">
+<div id="add_lease_modal" class="modal">
     <div class="modal-content">
-        <br>
-        <br>
-        <br>
-        <br>
         <div class="form-square" id="form-holder">
             <form id="add-lease-form" class="right-square">
-                <br>
-                <h4 id="header_with_unit_id">Add Lease for Unit ID : {{front_unit_id}}</h4>
-                <br>
+                <h4 id="header_with_unit_id">Add Lease for Unit ID: {{front_unit_id}}</h4>
+
                 <input type="hidden" id="unit_id" name="unit_id" value='{{front_unit_id}}'>
-                <input type="text" id="tenant_id" name="tenant_id" placeholder="Tenant ID" required>
+
+                <!-- Tenant Dropdown -->
+                <label for="tenant_id">Select Tenant</label>
+                <select id="tenant_id" name="tenant_id" required>
+                    <option value="" disabled selected>Select a tenant</option>
+                    {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.email_or_phone }}</option>
+                    {% endfor %}
+                </select>
+
                 <input type="text" id="room_number" name="room_number" placeholder="Room Number" required>
                 <input type="datetime-local" id="start_date" name="start_date" required>
                 <input type="datetime-local" id="end_date" name="end_date" required>
                 <input type="number" id="rent_amount" name="rent_amount" placeholder="Amount" required>
-                <br>
-                <br>
+
                 <div class="button-container">
                     <button class="button" id="confirmLeaseButton" type="submit">Submit</button>
                     <button class="button" id="cancelLeaseButton" type="button">Cancel</button>
@@ -92,93 +101,72 @@
     });
 
     function loadAddLeaseFormModal() {
-        // Get the modal
         var modal = document.getElementById("add_lease_modal");
-
-        // Open the modal
         modal.style.display = "block";
 
-        // Get the buttons that open and close the modal
-        var confirmButton = document.getElementById("confirmLeaseButton");
         var cancelButton = document.getElementById("cancelLeaseButton");
-
-        // When the user clicks on the cancel button, close the modal
         cancelButton.onclick = function() {
             modal.style.display = "none";
         };
 
-        // When the user clicks anywhere outside of the modal, close it
         window.onclick = function(event) {
             if (event.target == modal) {
                 modal.style.display = "none";
             }
         };
 
-        // Add event listener to the form for submission
-        confirmButton.onclick = function(event) {
-            event.preventDefault(); // Prevent the default form submission
-
-            // Collect the form data
+        // Form submission
+        document.getElementById("confirmLeaseButton").onclick = function(event) {
+            event.preventDefault();
             const formData = new FormData(document.getElementById("add-lease-form"));
-            const unitId = formData.get("unit_id");
-            const tenantId = formData.get("tenant_id");
-            const roomNumber = formData.get("room_number");
-            const startDate = formData.get("start_date");
-            const endDate = formData.get("end_date");
-            const rentAmount = formData.get("rent_amount");
 
-            // Make the call to the backend to add the new lease
             fetch('/add-lease', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    unit_id: unitId,
-                    tenant_id: tenantId,
-                    room_number: roomNumber,
-                    start_date: startDate,
-                    end_date: endDate,
-                    rent_amount: rentAmount
+                    unit_id: formData.get("unit_id"),
+                    tenant_id: formData.get("tenant_id"),
+                    room_number: formData.get("room_number"),
+                    start_date: formData.get("start_date"),
+                    end_date: formData.get("end_date"),
+                    rent_amount: formData.get("rent_amount")
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     const leaseTable = document.querySelector("#example tbody");
-
-                    if (leaseTable) {
-                        const newRow = document.createElement("tr");
-                        newRow.id = `lease-${data.lease.id}`;
-                        newRow.innerHTML = `
-                            <td>${data.lease.id}</td>
-                            <td>${data.lease.tenant_id}</td>
-                            <td>${data.lease.unit_id}</td>
-                            <td>${data.lease.unit_room_number}</td>
-                            <td>${data.lease.start_date}</td>
-                            <td>${data.lease.end_date}</td>
-                            <td>${data.lease.rent_amount}</td>
-                            <td>
-                                <div class="table-button-container">
-                                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/${data.lease.id}/${data.lease.tenant_id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Payments</a>
-                                </div>
-                                <div class="table-button-container">
-                                    <button class="table-button" onclick="deleteLease('${data.lease.id}')">Delete</button>
-                                </div>
-                            </td>
-                        `;
-                        leaseTable.appendChild(newRow);
-                    }
-
-                    // Close the modal
+                    const newRow = document.createElement("tr");
+                    newRow.id = `lease-${data.lease.id}`;
+                    newRow.innerHTML = `
+                        <td>${data.lease.id}</td>
+                        <td>${data.lease.tenant_id}</td>
+                        <td>${data.lease.unit_id}</td>
+                        <td>${data.lease.unit_room_number}</td>
+                        <td>${data.lease.start_date}</td>
+                        <td>${data.lease.end_date}</td>
+                        <td>${data.lease.rent_amount}</td>
+                        <td>
+                            <div class="table-button-container">
+                                <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/${data.lease.id}/${data.lease.tenant_id}" 
+                                    hx-target="#dashboard-container" 
+                                    hx-swap="innerHTML" 
+                                    onclick="activateDashboardContainer()">Payments</a>
+                            </div>
+                            <div class="table-button-container">
+                                <button class="table-button" onclick="deleteLease('${data.lease.id}')">Delete</button>
+                            </div>
+                        </td>
+                    `;
+                    leaseTable.appendChild(newRow);
                     modal.style.display = "none";
                 } else {
-                    alert('Error: ' + data.message); // Show error alert
+                    alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error adding lease:', error);
-                alert('An error occurred while trying to add the lease.');
+                alert('An error occurred while adding the lease.');
+                console.error(error);
             });
         };
     }
@@ -187,26 +175,22 @@
         if (confirm('Are you sure you want to delete this lease?')) {
             fetch(`/delete-lease/${leaseId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ lease_id: leaseId })  // Send lease ID as JSON
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lease_id: leaseId })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     const row = document.getElementById(`lease-${leaseId}`);
-                    if (row) {
-                        row.remove();
-                    }
-                    alert(data.message); // Show success alert
+                    row.remove();
+                    alert(data.message);
                 } else {
-                    alert('Error: ' + data.message); // Show error alert
+                    alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error deleting lease:', error);
-                alert('An error occurred while trying to delete the lease.');
+                alert('An error occurred while deleting the lease.');
+                console.error(error);
             });
         }
     }

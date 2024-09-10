@@ -1,7 +1,7 @@
 <!-- Unit Management Section -->
 <div class="back-container">
     <div class="button-container">
-        <button class="button" hx-get="http://localhost:5000/admin-user-properties/{{back_user_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Back</button>
+        <button class="button" hx-get="http://localhost:5000/landlord-properties/{{back_user_id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Back</button>
     </div>
 </div>
 <br>
@@ -34,7 +34,7 @@
             <!-- <td>{{unit.tenant_id}}</td> -->
             <td>
                 <div class="table-button-container">
-                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-unit-leases/{{unit.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Lease</a>
+                    <a href="" class="table-button" hx-get="http://localhost:5000/landlord-unit-leases/{{unit.id}}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Lease</a>
                 </div>
                 <div class="table-button-container">
                     <button class="table-button" onclick="deleteUnit('{{ unit.id }}')">Delete</button>
@@ -165,7 +165,7 @@
                             <td>${data.unit.unit_description}</td>
                             <td>
                                 <div class="table-button-container">
-                                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-unit-leases/${data.unit.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Lease</a>
+                                    <a href="" class="table-button" hx-get="http://localhost:5000/landlord-unit-leases/${data.unit.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Lease</a>
                                 </div>
                                 <div class="table-button-container">
                                     <button class="table-button" onclick="deleteUnit('${data.unit.id}')">Delete</button>
