@@ -87,6 +87,7 @@ class License(Base):
         return f"License(id={self.id}, uid='{self.uid}', license_key='{self.license_key}', license_type='{self.license_type}', license_status='{self.license_status}', license_expiry='{self.license_expiry}', created_at={self.created_at}, updated_at={self.updated_at})"
 
 
+
 class LicenseResetKey(pydantic.BaseModel):
     license_key: str
 

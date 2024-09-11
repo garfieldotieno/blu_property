@@ -297,6 +297,7 @@ def validate_reset_key():
         return redirect("/")
 
 
+
 @app.route('/')
 def index():
     query = is_active()
@@ -389,6 +390,7 @@ def test_tenant_access():
         return redirect('/tenant')
     else:
         return "Unauthorized Access", 403
+
 
 @app.route('/logout')
 def logout():
@@ -1153,33 +1155,50 @@ def landlord_property_units(property_id):
 
 @app.route('/landlord-unit-leases/<int:unit_id>')
 def landlord_unit_leases(unit_id):
+    # Fetch the unit and its related property
     unit = db_session.query(Unit).filter_by(id=unit_id).first()
     back_property_id = unit.property_id
 
+    # Fetch all leases for the unit
     leases = db_session.query(Lease).filter_by(unit_id=unit_id).all()
     leases2 = db_session.query(Lease).filter_by(unit_id=unit_id).all()
     print(f"fetched lease for unit is {leases}")
     for lease in leases2:
         print(f"fetched lease dict is : {lease.to_dict()}")
-    return render_template('landlord_leases.html', leases=leases, header_title="Leases", front_unit_id=unit_id, back_property_id=back_property_id)
-     
+
+    # Fetch all users for the tenant dropdown
+    users = db_session.query(User).filter_by(user_type="Tenant").all()
+
+    # Pass the leases and users to the template
+    return render_template(
+        'landlord_leases.html', 
+        leases=leases, 
+        users=users,  # Pass the users for the dropdown
+        header_title="Leases", 
+        front_unit_id=unit_id, 
+        back_property_id=back_property_id
+    )
 
 @app.route('/landlord-lease-payments/<int:lease_id>/<int:tenant_id>')
 def landlord_lease_payments(lease_id,tenant_id):
     lease = db_session.query(Lease).filter_by(id=lease_id).first()
     back_unit_id = lease.unit_id
+
+    # Fetch all users for the tenant dropdown
+    users = db_session.query(User).filter_by(user_type="Tenant").all()
+
     payment_reminders = db_session.query(PaymentReminder).filter_by(lease_id=lease_id).all()
     payment_confirmations = db_session.query(PaymentConfirmation).filter_by(lease_id=lease_id).all()
     print(f"fetched reminders for lease : {lease_id} are : {payment_reminders}\n")
     print(f"fetched confirmations for lease : {lease_id} are : {payment_confirmations}\n")
-    return render_template('landlord_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, back_unit_id=back_unit_id)
+    return render_template('landlord_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, back_unit_id=back_unit_id, users=users)
  
 
 @app.route('/landlord-payment-reminders/<int:user_id>')
 def get_all_landlord_reminders(user_id):
     reminders = db_session.query(PaymentReminder).all()
     return render_template('landlord_reminders.html', reminders=reminders, header_title="Payment Reminders", user_id=user_id)
-     
+    
 
 @app.route('/landlord-payment-confirmations/<int:user_id>')
 def get_all_landlord_confirmations(user_id):
