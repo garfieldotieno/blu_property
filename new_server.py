@@ -71,17 +71,18 @@ def randomString(stringLength=100):
 
 session_middleware = {
     "Anonymous": {
-        "allowed_routes": ['/', '/about', '/invalid', '/register', '/login', '/default-content', '/about']
+        "allowed_routes": ['/', '/about', '/invalid', '/register', '/login', '/default-content', '/about', '/verify-otp']
     },
     "Admin": {
-        "allowed_routes": ['/admin']
+        "allowed_routes": ['/admin'] 
     },
     "LandLord": {
         # Dynamically generate routes from /landlord/2 to /landlord/100
-        "allowed_routes": ['/landlord'] + [f'/landlord/{i}' for i in range(2, 101)]
+        # "allowed_routes": ['/landlord'] + [f'/landlord/{i}' for i in range(2, 101)]
+        "allowed_routes": [f'/landlord/{i}' for i in range(2, 101)]
     },
     "Tenant": {
-        "allowed_routes": ['/tenant']
+        "allowed_routes": ['/tenant'] + [f'/tenant/{i}' for i in range(2,100)]
     }
 }
 
@@ -93,6 +94,7 @@ def generate_login_session(user_type):
     data = f"{user_type}:{random_value.hex()}:{SECRET_KEY}".encode()
     session_token = hashlib.sha256(data).hexdigest()
     return session_token
+
 
 def verify_login_session(input_expected_user_type):
     """Verify the login session stored in the session cookie."""
@@ -316,9 +318,56 @@ def index():
 def show_register():
     return render_template('register.html')
 
+@app.route('/show-receipt-otp')
+def show_receipt_otp():
+    return render_template('receipt-otp.html')
+
+def verify_otp(email_or_phone, otp_code):
+    try:
+        # Query to fetch the OTP for the provided email/phone and otp_code
+        fetch_otp = db_session.query(Otp).filter_by(
+            user_email=email_or_phone,
+            otp=otp_code
+        ).one()
+
+        # Check if the OTP is still valid
+        if fetch_otp.is_active_upto > datetime.utcnow():
+            return {'status': 'success', 'message': 'OTP verified successfully.', 'otp':fetch_otp}
+        else:
+            return {'status': 'error', 'message': 'OTP has expired.'}
+
+    except Exception as e:
+        return {'status': 'error', 'message': f'Invalid OTP or user details. error being ... {e}'}  
+
+
 @app.route('/verify-otp', methods=['POST'])
 def process_otp():
-    pass 
+    data = request.form
+    email_or_phone = data.get('email_or_phone')
+    otp_code = data.get('otp_code')
+
+    # Verify OTP using the previously defined verify_otp function
+    verify_status = verify_otp(email_or_phone, otp_code)
+
+    if verify_status['status'] == "success":
+        # Define the payload for successful OTP verification
+        payload = {
+            'message': 'OTP verified successfully.',
+            'message_status':True,
+            'status': 'success',
+            'payload': verify_status['otp'].to_dict()
+        }
+    else:
+        # Define the payload for failed OTP verification
+        payload = {
+            'message': 'OTP verification failed.',
+            'message_status':False,
+            'status': 'error',
+            'reason': verify_status.get('message', 'Unknown error'),  # Includes error details
+        }
+
+    # Return the payload to the frontend using the 'otp-result.html' template
+    return render_template('otp-result.html', otp_result_payload=payload) 
 
 @app.route('/login', methods=['GET'])
 def show_login():
@@ -327,6 +376,7 @@ def show_login():
 @app.route('/default-content', methods=['GET'])
 def show_default_content():
     return render_template('default.html')
+
 
 
 @app.route('/about', methods=['GET'])
@@ -475,6 +525,7 @@ def get_unit_lease(unit_id):
         back_property_id=back_property_id
     )
 
+
 @app.route('/admin-lease-payments/<int:lease_id>/<int:tenant_id>', methods=['GET'])
 def get_lease_payments(lease_id, tenant_id):
     lease = db_session.query(Lease).filter_by(id=lease_id).first()
@@ -483,7 +534,7 @@ def get_lease_payments(lease_id, tenant_id):
     payment_confirmations = db_session.query(PaymentConfirmation).filter_by(lease_id=lease_id).all()
     print(f"fetched reminders for lease : {lease_id} are : {payment_reminders}\n")
     print(f"fetched confirmations for lease : {lease_id} are : {payment_confirmations}\n")
-    return render_template('admin_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, back_unit_id=back_unit_id)
+    return render_template('admin_payments.html', reminders=payment_reminders, confirmations=payment_confirmations, header_title="Payments", lease_id=lease_id, tenant_id=tenant_id, lease=lease, back_unit_id=back_unit_id)
 
 
 @app.route('/admin-add-user')
@@ -504,7 +555,8 @@ def admin_add_lease(unit_id):
 
 @app.route('/admin-add-payment-reminder/<int:lease_id>')
 def admin_add_payment_reminder(lease_id):
-    return render_template('add_payment_reminder.html', lease_id=lease_id)
+    users = db_session.query(User).all()
+    return render_template('add_payment_reminder.html', lease_id=lease_id, users=users)
 
 
 
@@ -648,7 +700,8 @@ def add_user():
         )
 
         # Add the new user to the database session
-        db_session.add(new_user)
+        
+        # db_session.add(new_user)
         
 
         otp_code = None
@@ -656,10 +709,16 @@ def add_user():
             otp_code = generate_otp_code()
             otp_record = Otp(
                 user_email=email_or_phone,
+                action_name="User Creation",
+                action_url="",
                 user_type=user_type,
                 otp=otp_code
             )
-            db_session.add(otp_record)
+        
+        
+        db_session.add(new_user)
+        db_session.add(otp_record)
+        
         
         # commit all changes
         db_session.commit()
@@ -688,6 +747,7 @@ def add_user():
         # Rollback in case of an error
         print(f"Error: {e}")
         db_session.rollback()
+
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -936,6 +996,7 @@ def update_reminder(reminder_id):
         return jsonify({'success': False, 'error': str(e)}), 500
     
 
+
 @app.route('/clear-confirmation/<int:confirmation_id>', methods=['POST'])
 def clear_confirmation(confirmation_id):
     print(f"recieved confirmation id is : {confirmation_id}")
@@ -975,12 +1036,15 @@ def clear_confirmation(confirmation_id):
 @app.route('/download-receipt/<int:confirmation_id>')
 def download_receipt(confirmation_id):
     # Fetch the confirmation record
-    confirmation = db_session.query(PaymentConfirmation).get(confirmation_id)
+    confirmation = db_session.get(PaymentConfirmation, confirmation_id)
     if not confirmation:
         return jsonify({'error': 'Payment confirmation not found'}), 404
 
     # Check if a receipt already exists for the given confirmation_id
     existing_receipt = db_session.query(Receipt).filter_by(confirmation_id=confirmation_id).first()
+
+    existing_lease = db_session.query(Lease).filter_by(id=confirmation.lease_id).first()
+    existing_user = db_session.query(User).filter_by(id=existing_lease.tenant_id).first()
 
     def generate_alpha_numeric(length=6):
         """Generates a random alpha-numerical string."""
@@ -999,16 +1063,31 @@ def download_receipt(confirmation_id):
             description=confirmation.Payment_description,
             receipt_date=confirmation.created_at  # Alternatively, use current timestamp here
         )
+
+        # Generate OTP code (assuming this function exists)
+        otp_code = generate_otp_code()
         
-        # Add and commit the new receipt record to the database
+        # Create OTP record
+        otp_record = Otp(
+            user_email=existing_user.email_or_phone,  # Ensure correct value (email or phone)
+            action_name='PDF Generation',
+            action_url=f'/download-receipt/{confirmation_id}',
+            is_active_upto=datetime.utcnow() + timedelta(days=30),  # Fix the lambda
+            user_type="tenant",
+            otp=otp_code
+        )
+        
+        # Add and commit the new receipt and OTP record to the database
         db_session.add(new_receipt)
+        db_session.add(otp_record)
         db_session.commit()
     else:
         # Use the existing receipt for PDF generation
+        otp_record = db_session.query(Otp).filter_by(user_email=existing_user.email_or_phone).first()
         new_receipt = existing_receipt
 
     # Render HTML template with confirmation and receipt data
-    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt)
+    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt, otp_info=otp_record)
 
     # Convert HTML to PDF
     buffer = BytesIO()
@@ -1065,6 +1144,7 @@ def all_reminders_report_pdf():
     except Exception as e:
         print(f"Error generating reminders report: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 
 @app.route('/generate-confirmations-report', methods=['POST'])

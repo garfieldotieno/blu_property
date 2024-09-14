@@ -39,14 +39,28 @@ class Otp(Base):
 
     # Added: User email
     user_email = Column(String, nullable=False)
+    action_name = Column(String, nullable=True)
+    action_url = Column(String, nullable=True)
 
     # Added: Is active up to (usually one day)
     is_active_upto = Column(DateTime, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(days=1))
 
-    user_type = Column(Enum('landlord', 'tenant', name='otp_user_types'))
+    user_type = Column(Enum('landlord', 'tenant', 'Tenant', 'Landlord', name='otp_user_types'))
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        return {
+          "id": self.id,
+          "otp" :self.otp,
+          "user_email":self.user_email,
+          "action_name":self.action_name,
+          "action_url":self.action_url,
+          "is_active_upto":self.is_active_upto,
+          "user_type":self.user_type
+        }
+        
 
 class Session(Base):
     __tablename__ = 'sessions'
@@ -212,6 +226,7 @@ class Unit(Base):
         }
 
 
+
 class Lease(Base):
     __tablename__ = 'leases'
 
@@ -306,7 +321,7 @@ class PaymentConfirmation(Base):
             "payment_description":self.Payment_description,
             "payment_cleared" : self.payment_cleared
         } 
-
+    
 
 class Receipt(Base):
     __tablename__ = 'receipts'

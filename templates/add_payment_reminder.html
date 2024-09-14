@@ -9,9 +9,17 @@
 <div class="form-square" id="form-holder">
     <form id="add-user-form" class="right-square" action="/add-reminder" method="POST" hx-target="#form-holder" hx-swap="innerHTML">
         <br>
-        <h4 id="header_with_landlord_id">Add Payment Reminder for Lease ID : {{lease_id}}</h4>
+        <h4 id="header_with_landlord_id">Add Payments Reminder for Lease ID : {{lease_id}}</h4>
         <br>
-        <input type="hidden" id="lease_id" name="lease_id" value="{{lease_id}}">
+        <!-- Tenant Dropdown -->
+        <label for="tenant_id">Select Tenant</label>
+        <select id="tenant_id" name="tenant_id" required>
+            <option value="" disabled selected>Select a tenant</option>
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.email_or_phone }}</option>
+            {% endfor %}
+        </select>
+
         <input type="hidden" id="payment_status" name="payment_status" value='0'>
 
         <input type="text" id="tenant_id" name="tenant_id" placeholder="Tenant ID">

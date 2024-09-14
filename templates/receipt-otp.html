@@ -1,0 +1,40 @@
+<h4>Receipt O.T.P</h4>
+<form class="submit_form" onsubmit="submitForm(event)">
+    <input type="text" placeholder="email_or_phone" name="email_or_phone" required>
+    <input type="text" placeholder="code" name="otp_code" required>
+    <br>
+    <div class="button-container">
+        <button type="submit" class="button">Submit</button>
+        <button type="button" class="button" hx-get="/default-content" hx-target=".right-square">Cancel</button>
+    </div>
+</form>
+
+<!-- Result Display -->
+<div id="otp-result"></div>
+
+<script>
+    function submitForm(event) {
+        event.preventDefault();  // Prevent the form from submitting in the default way
+
+        // Get form data
+        const formData = new FormData(event.target);
+        const email_or_phone = formData.get('email_or_phone');
+        const otp_code = formData.get('otp_code');
+
+        // Make an asynchronous POST request
+        fetch('/verify-otp', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.text()) // Handle the response as text to directly render HTML
+        .then(data => {
+            // Insert the returned HTML into the #otp-result div
+            document.getElementById('otp-result').innerHTML = data;
+        })
+        .catch(error => {
+            // Handle errors (network issues, etc.)
+            console.error('Error:', error);
+            document.getElementById('otp-result').innerHTML = '<p>An error occurred. Please try again.</p>';
+        });
+    }
+</script>

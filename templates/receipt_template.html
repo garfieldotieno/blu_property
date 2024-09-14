@@ -125,6 +125,8 @@
                     <td>{{ confirmation.updated_at }}</td>
                 </tr>
             </table>
+
+            <p>Otp Information : Otp : {{otp_info.otp}}, Email : {{otp_info.user_email}}, Name : {{otp_info.action_name}}, Active Up To : {{otp_info.is_active_upto.strftime('%Y-%m-%d %H:%M:%S') }}</p>
         </div>
     </div>
 </body>
