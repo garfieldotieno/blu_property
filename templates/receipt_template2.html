@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 50pt;
+                width: 512pt;
+                top: 50pt;
+                height: 40pt;
+            }
+
+            @frame content_frame {
+                -pdf-frame-content: content_content;
+                left: 50pt;
+                width: 512pt;
+                top: 100pt;
+                height: 632pt;
+            }
+
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 50pt;
+                width: 512pt;
+                top: 772pt;
+                height: 20pt;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        #header_content {
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #footer_content {
+            font-size: 12px;
+            text-align: center;
+            color: #777;
+        }
+
+        .table-container {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 500px;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Content for Dynamic Frame 'content_frame' -->
+    <div id="content_content">
+        <div class="table-container">
+            <h2 style="text-align: center;">Payment Details</h2>
+            <table>
+                <tr>
+                    <th>Confirmation ID</th>
+                    <td>{{ confirmation.id }}</td>
+                </tr>
+                <tr>
+                    <th>Lease ID</th>
+                    <td>{{ confirmation.lease_id }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Reminder ID</th>
+                    <td>{{ confirmation.payment_reminder_id }}</td>
+                </tr>
+                <tr>
+                    <th>Amount Paid</th>
+                    <td>{{ confirmation.amount_paid }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Type</th>
+                    <td>{{ confirmation.payment_type }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Reference</th>
+                    <td>{{ confirmation.payment_refference }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Description</th>
+                    <td>{{ confirmation.Payment_description }}</td>
+                </tr>
+                <tr>
+                    <th>Payment Cleared</th>
+                    <td>{{ confirmation.payment_cleared }}</td>
+                </tr>
+                <tr>
+                    <th>Created At</th>
+                    <td>{{ confirmation.created_at }}</td>
+                </tr>
+                <tr>
+                    <th>Updated At</th>
+                    <td>{{ confirmation.updated_at }}</td>
+                </tr>
+            </table>
+
+            <p>Otp Information : Otp : {{otp_info.otp}}, Email : {{otp_info.user_email}}, Name : {{otp_info.action_name}}, Active Up To : {{otp_info.is_active_upto.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+    </div>
+</body>
+</html>

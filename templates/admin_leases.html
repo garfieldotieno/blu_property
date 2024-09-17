@@ -34,7 +34,7 @@
             <td>{{lease.room_number}}</td>
             <td>{{lease.start_date}}</td>
             <td>{{lease.end_date}}</td>
-            <td>{{lease.rent_amount}}</td>
+            <td>{{lease.rent_amount | numberFormat}}</td>
             <td>
                 <div class="table-button-container">
                     <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/{{lease.id}}/{{lease.tenant_id}}" 

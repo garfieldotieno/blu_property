@@ -1035,6 +1035,7 @@ def clear_confirmation(confirmation_id):
 
 @app.route('/download-receipt/<int:confirmation_id>')
 def download_receipt(confirmation_id):
+    
     # Fetch the confirmation record
     confirmation = db_session.get(PaymentConfirmation, confirmation_id)
     if not confirmation:
@@ -1087,7 +1088,7 @@ def download_receipt(confirmation_id):
         new_receipt = existing_receipt
 
     # Render HTML template with confirmation and receipt data
-    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt, otp_info=otp_record)
+    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt, otp_info=otp_record, existing_user=existing_user)
 
     # Convert HTML to PDF
     buffer = BytesIO()
@@ -1101,6 +1102,11 @@ def download_receipt(confirmation_id):
 
     # Return the generated PDF as a response
     return send_file(buffer, as_attachment=True, download_name=f"Receipt_{new_receipt.receipt_number}.pdf", mimetype='application/pdf')
+
+
+@app.route('/test-next-pdf')
+def show_pdf_page():
+    pass 
 
 
 @app.route('/admin-all-payment-reminders')

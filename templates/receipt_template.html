@@ -5,82 +5,90 @@
     <title>Receipt</title>
     <style>
         @page {
-            size: A4 portrait;
-            margin: 0;
-
-            @frame header_frame {
-                -pdf-frame-content: header_content;
-                left: 50pt;
-                width: 512pt;
-                top: 50pt;
-                height: 40pt;
-            }
-
-            @frame content_frame {
-                -pdf-frame-content: content_content;
-                left: 50pt;
-                width: 512pt;
-                top: 100pt;
-                height: 632pt;
-            }
-
-            @frame footer_frame {
-                -pdf-frame-content: footer_content;
-                left: 50pt;
-                width: 512pt;
-                top: 772pt;
-                height: 20pt;
-            }
+            size: 80mm 297mm; /* Thermal printer paper size */
+            margin: 5mm; /* Small margin for content fitting */
         }
 
         body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-
-        #header_content {
-            font-size: 18px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        #footer_content {
             font-size: 12px;
+            font-family: Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        .receipt_container {
+            padding: 8px;
+            width: 70mm; /* Ensure it fits within thermal paper width */
+            margin: 0 auto; /* Center content */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-style: dashed;
+            border-width: 2px; /* Dashed border for receipt-like style */
+            border-color: #000;
+        }
+
+        .header-section {
             text-align: center;
-            color: #777;
+            margin-bottom: 10px;
+        }
+
+        .header-section img {
+            max-width: 50px; /* Adjust logo size */
+            margin-bottom: 5px;
+        }
+
+        .header-section p {
+            margin: 2px 0; /* Reduce margin for compactness */
         }
 
         .table-container {
-            margin-top: 20px;
+            width: 100%; /* Ensure table takes up the full width */
+            border-collapse: collapse;
         }
 
         table {
-            width: 500px;
+            width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        table, th, td {
-            border: 1px solid #ddd;
         }
 
         th, td {
-            padding: 10px;
+            padding: 5px;
             text-align: left;
-            font-size: 14px;
+            border-bottom: 1px dashed #000; /* Dashed lines for table rows */
         }
 
         th {
-            background-color: #f2f2f2;
+            font-weight: bold;
+            background-color: #f2f2f2; /* Light gray for headers */
+        }
+
+        p {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 10px;
+            padding: 5px;
+            border-top: 1px dashed #000; /* Dashed line for footer section */
         }
     </style>
 </head>
 <body>
-    
-    <!-- Content for Dynamic Frame 'content_frame' -->
-    <div id="content_content">
+    <!-- Main Receipt Container -->
+    <h2 style="text-align: center;">Organization Details</h2>
+    <div class="receipt_container">
+        <!-- Header Section: Logo, Address, Tel, Email -->
+        <div class="header-section">
+            <img src="{{ logo_url }}" alt="Logo">
+            <p>Company Name</p>
+            <p>123 Business St, City</p>
+            <p>Tel: +123 456 789</p>
+            <p>Email: info@company.com</p>
+        </div>
+
+        <!-- Table Container with Payment Information -->
+         <br>
+         <br>
         <div class="table-container">
             <h2 style="text-align: center;">Payment Details</h2>
             <table>
@@ -125,9 +133,17 @@
                     <td>{{ confirmation.updated_at }}</td>
                 </tr>
             </table>
-
-            <p>Otp Information : Otp : {{otp_info.otp}}, Email : {{otp_info.user_email}}, Name : {{otp_info.action_name}}, Active Up To : {{otp_info.is_active_upto.strftime('%Y-%m-%d %H:%M:%S') }}</p>
         </div>
+
+        <!-- OTP Information -->
+         <br>
+         <br>
+         <br>
+         <h2 style="text-align: center;">OTP Details</h2>
+        <p>
+            Otp Information: Otp: {{ otp_info.otp }}, Email: {{ otp_info.user_email }},
+            Name: {{ otp_info.action_name }}, Active Up To: {{ otp_info.is_active_upto.strftime('%Y-%m-%d %H:%M:%S') }}
+        </p>
     </div>
 </body>
 </html>
