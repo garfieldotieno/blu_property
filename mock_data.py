@@ -56,16 +56,16 @@ def populate_mock_data():
         session.add(admin)
 
         # Landlord Users Creation
-        landlords = [
-            User(uid=generate_uid("Landlord"), user_name="LandlordOne", email_or_phone="landlord1@example.com", password_hash=hash_password("landlordpass1"), user_type="Landlord"),
-            User(uid=generate_uid("Landlord"), user_name="LandlordTwo", email_or_phone="landlord2@example.com", password_hash=hash_password("landlordpass2"), user_type="Landlord"),
-            User(uid=generate_uid("Landlord"), user_name="LandlordThree", email_or_phone="landlord3@example.com", password_hash=hash_password("landlordpass3"), user_type="Landlord")
-        ]
-        session.add_all(landlords)
+        # landlords = [
+        #     User(uid=generate_uid("Landlord"), user_name="LandlordOne", email_or_phone="landlord1@example.com", password_hash=hash_password("landlordpass1"), user_type="Landlord"),
+        #     User(uid=generate_uid("Landlord"), user_name="LandlordTwo", email_or_phone="landlord2@example.com", password_hash=hash_password("landlordpass2"), user_type="Landlord"),
+        #     User(uid=generate_uid("Landlord"), user_name="LandlordThree", email_or_phone="landlord3@example.com", password_hash=hash_password("landlordpass3"), user_type="Landlord")
+        # ]
+        # session.add_all(landlords)
 
-        licenses = []
+        # licenses = []
         
-        session.add_all(licenses)
+        # session.add_all(licenses)
 
         # tenants = [
         #     User(uid=generate_uid("Tenant"), user_name="TenantOne", email_or_phone="tenant1@example.com", password_hash=hash_password("tenantpass1"), user_type="Tenant"),

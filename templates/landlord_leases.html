@@ -99,7 +99,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         initializeDataTable();
     });
-
     function loadAddLeaseFormModal() {
         var modal = document.getElementById("add_lease_modal");
         modal.style.display = "block";
@@ -118,13 +117,16 @@
         // Form submission
         document.getElementById("confirmLeaseButton").onclick = function(event) {
             event.preventDefault();
-            const formData = new FormData(document.getElementById("add-lease-form"));
+            const form = document.getElementById("add-lease-form");
+            const formData = new FormData(form);
+
+            const unitId = formData.get("unit_id");
 
             fetch('/add-lease', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    unit_id: formData.get("unit_id"),
+                    unit_id: unitId,
                     tenant_id: formData.get("tenant_id"),
                     room_number: formData.get("room_number"),
                     start_date: formData.get("start_date"),
@@ -135,30 +137,13 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const leaseTable = document.querySelector("#example tbody");
-                    const newRow = document.createElement("tr");
-                    newRow.id = `lease-${data.lease.id}`;
-                    newRow.innerHTML = `
-                        <td>${data.lease.id}</td>
-                        <td>${data.lease.tenant_id}</td>
-                        <td>${data.lease.unit_id}</td>
-                        <td>${data.lease.unit_room_number}</td>
-                        <td>${data.lease.start_date}</td>
-                        <td>${data.lease.end_date}</td>
-                        <td>${data.lease.rent_amount}</td>
-                        <td>
-                            <div class="table-button-container">
-                                <a href="" class="table-button" hx-get="http://localhost:5000/admin-lease-payments/${data.lease.id}/${data.lease.tenant_id}" 
-                                    hx-target="#dashboard-container" 
-                                    hx-swap="innerHTML" 
-                                    onclick="activateDashboardContainer()">Payments</a>
-                            </div>
-                            <div class="table-button-container">
-                                <button class="table-button" onclick="deleteLease('${data.lease.id}')">Delete</button>
-                            </div>
-                        </td>
-                    `;
-                    leaseTable.appendChild(newRow);
+                    // Reload the unit leases section dynamically with HTMX
+                    htmx.ajax('GET', `http://localhost:5000/landlord-unit-leases/${unitId}`, {
+                        target: '#dashboard-container',
+                        swap: 'innerHTML'
+                    });
+
+                    alert(`${data.message}`);
                     modal.style.display = "none";
                 } else {
                     alert('Error: ' + data.message);

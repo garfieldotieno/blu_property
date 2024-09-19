@@ -151,34 +151,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const unitTable = document.querySelector("#example tbody");
+                    // Reload the units list dynamically with HTMX
+                    htmx.ajax('GET', `http://localhost:5000/admin-property-units/${propertyId}`, {
+                        target: '#dashboard-container',
+                        swap: 'innerHTML'
+                    });
 
-                    if (unitTable) {
-                        const newRow = document.createElement("tr");
-                        newRow.id = `unit-${data.unit.id}`;
-                        newRow.innerHTML = `
-                            <td>${data.unit.id}</td>
-                            <td>${data.unit.number}</td>
-                            <td>${data.unit.property_id}</td>
-                            <td>${data.unit.room_quantity}</td>
-                            <td>${data.unit.unit_type}</td>
-                            <td>${data.unit.unit_description}</td>
-                            <td>
-                                <div class="table-button-container">
-                                    <a href="" class="table-button" hx-get="http://localhost:5000/admin-unit-leases/${data.unit.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Lease</a>
-                                </div>
-                                <div class="table-button-container">
-                                    <button class="table-button" onclick="deleteUnit('${data.unit.id}')">Delete</button>
-                                </div>
-                            </td>
-                        `;
-                        unitTable.appendChild(newRow);
-                    }
-
-                    // Close the modal
+                    alert(`${data.message}`);
                     modal.style.display = "none";
                 } else {
-                    alert('Error: ' + data.message); // Show error alert
+                    alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
@@ -216,3 +198,4 @@
         }
     }
 </script>
+

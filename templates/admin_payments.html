@@ -265,36 +265,18 @@
             })
         .then(response => response.json())
         .then(data => {
-                if (data.success) {
-                    // Add the new reminder row to the table
-                    const reminderTable = document.querySelector("#example tbody");
-                    if (reminderTable) {
-                        const newRow = document.createElement("tr");
-                        newRow.id = `reminder-${data.reminder.id}`;
-                        newRow.innerHTML = `
-                            <td>${data.reminder.id}</td>
-                            <td>${data.reminder.tenant_id}</td>
-                            <td>${data.reminder.lease_id}</td>
-                            <td>${data.reminder.amount_due}</td>
-                            <td>${data.reminder.due_date}</td>
-                            <td>${data.reminder.payment_status}</td>
-                            <td>
-                                <div class="table-button-container">
-                                    <a href="javascript:void(0);" class="table-button" onclick="appendConfirmation('${data.reminder.id}')">Update Confirmation</a>
-                                </div>
-                                <div class="table-button-container">
-                                    <a href="javascript:void(0);" class="table-button" onclick="deleteReminder('${data.reminder.id}')">Delete</a>
-                                </div>
-                            </td>
-                        `;
-                        reminderTable.appendChild(newRow);
-                    }
+            if (data.success) {
+                    // Reload the lease payments section dynamically with HTMX
+                    htmx.ajax('GET', `http://localhost:5000/admin-lease-payments/${leaseId}/${tenantId}`, {
+                        target: '#dashboard-container',
+                        swap: 'innerHTML'
+                    });
 
-                    // Close the modal after successful submission
+                    alert(`${data.message}`);
                     modal.style.display = "none";
-                } else {
-                    alert("Error adding payment reminder: " + data.error);
-                }
+            } else {
+                alert('Error: ' + data.message);
+            }
             })
         .catch(error => {
             console.error('Error:', error);
@@ -306,37 +288,38 @@
 
     
     function appendConfirmation(reminderId) {
-    // Get the modal
-    var modal = document.getElementById("confirmationModal");
-    // Open the modal 
-    modal.style.display = "block";
+        // Get the modal
+        var modal = document.getElementById("confirmationModal");
+        // Open the modal
+        modal.style.display = "block";
 
-    // Get the buttons that open and close the modal
-    var confirmButton = document.getElementById("confirmButton");
-    var cancelButton = document.getElementById("cancelButton");
+        // Get the buttons that open and close the modal
+        var confirmButton = document.getElementById("confirmButton");
+        var cancelButton = document.getElementById("cancelButton");
 
-    // When the user clicks on the confirm button, perform the confirmation
-    confirmButton.onclick = function() {
-        // Add event listener to the form for submission
-        document.getElementById("update-reminder-form").addEventListener("submit", function(event) {
-            event.preventDefault(); // Prevent the default form submission
+        // When the user clicks on the confirm button, perform the confirmation
+        confirmButton.onclick = function(event) {
+            // Prevent the default form submission
+            event.preventDefault();
 
             // Collect the form data
-            const formData = new FormData(this);
+            const form = document.getElementById("update-reminder-form");
+            const formData = new FormData(form);
             const leaseId = formData.get("lease_id");
             const amountPaid = formData.get("amount_paid");
             const paymentType = formData.get("payment_type");
             const paymentReference = formData.get("payment_refference");
             const paymentDescription = formData.get("payment_description");
 
-            // Log the collected form data
-            console.log("Form Data:", {
-                leaseId,
-                amountPaid,
-                paymentType,
-                paymentReference,
-                paymentDescription
-            });
+            // Extract tenant_id from the table
+            const reminderRow = document.getElementById(`reminder-${reminderId}`);
+            let tenantId = null;
+            if (reminderRow) {
+                const tenantCell = reminderRow.querySelector('td:nth-child(2)'); // Assuming tenant_id is in the 2nd column
+                if (tenantCell) {
+                    tenantId = tenantCell.textContent.trim();
+                }
+            }
 
             // Make the call to the backend to update the confirmation status and create a new record
             fetch(`/update-reminder/${reminderId}`, {
@@ -355,65 +338,38 @@
             })
             .then(response => response.json())
             .then(data => {
-                // Log the response data
-                console.log("Response Data:", data);
-
                 if (data.success) {
-                    // Update the UI to reflect the confirmation
-                    const reminderRow = document.getElementById(`reminder-${reminderId}`);
-                    if (reminderRow) {
-                        const actionCell = reminderRow.querySelector('td:last-child');
-                        if (actionCell) {
-                            actionCell.innerHTML = '';  // Remove the button from the action cell
-                        }
-                    }
+                    // Reload the lease payments section dynamically with HTMX
+                    htmx.ajax('GET', `http://localhost:5000/admin-lease-payments/${leaseId}/${tenantId}`, {
+                        target: '#dashboard-container',
+                        swap: 'innerHTML'
+                    });
 
-                    // Add the new record to the Pending Payment Confirmations table
-                    const confirmationTable = document.querySelector("#example2 tbody");
-                    if (confirmationTable) {
-                        const newRow = document.createElement("tr");
-                        newRow.id = `confirmation-${data.payment_confirmation.id}`;
-                        newRow.innerHTML = `
-                            <td>${data.payment_confirmation.id}</td>
-                            <td>${data.payment_confirmation.lease_id}</td>
-                            <td>${reminderId}</td>
-                            <td>${data.payment_confirmation.amount_paid}</td>
-                            <td>${data.payment_confirmation.payment_type}</td>
-                            <td>${data.payment_confirmation.payment_refference}</td>
-                            <td>${data.payment_confirmation.payment_description}</td>
-                            <td>
-                                <div class="table-button-container">
-                                    <a href="#" class="table-button" onclick="clearConfirmation('${data.payment_confirmation.id}')">Clear</a>
-                                </div>
-                            </td>
-                        `;
-                        confirmationTable.appendChild(newRow);
-                    }
-
-                    // Close the modal
+                    alert(`${data.message}`);
                     modal.style.display = "none";
                 } else {
-                    console.error('Error updating confirmation:', data.error);
+                    alert('Error: ' + data.message);
                 }
             })
-            .catch(error => console.error('Error updating confirmation:', error));
-        });
-    };
+            .catch(error => {
+                console.error('Error updating confirmation:', error);
+                alert('An error occurred while updating the confirmation.');
+            });
+        };
 
-    // When the user clicks on the cancel button, close the modal
-    cancelButton.onclick = function() {
-        modal.style.display = "none";
-    };
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-        if (event.target == modal) {
+        // When the user clicks on the cancel button, close the modal
+        cancelButton.onclick = function() {
             modal.style.display = "none";
-        }
-    };
+        };
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
     }
-
-
+    
     function clearConfirmation(confirmationId) {
         alert("you are about to clear a payment confirmation")
         fetch(`/clear-confirmation/${confirmationId}`, {

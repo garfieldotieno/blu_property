@@ -492,6 +492,7 @@ def get_user_properties(user_id):
 
 @app.route('/admin-property-units/<int:property_id>', methods=['GET'])
 def get_property_units(property_id):
+    print(f"called property units endpoint")
     current_property = db_session.query(Property).filter_by(id=property_id).first()
     
     back_user_id = current_property.landlord_id

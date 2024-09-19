@@ -105,102 +105,66 @@
         }
     }
 
+   
     function loadAddPropertyFormModal(){
-        // Get the modal
         var modal = document.getElementById("add_property_modal");
 
-        // Open the modal 
         modal.style.display = "block";
 
-        // Get the buttons that open and close the modal
         var confirmButton = document.getElementById("confirmButton");
         var cancelButton = document.getElementById("cancelButton");
 
-        // When the user clicks on the cancel button, close the modal
         cancelButton.onclick = function() {
             modal.style.display = "none";
         };
 
-        // When the user clicks anywhere outside of the modal, close it
         window.onclick = function(event) {
             if (event.target == modal) {
                 modal.style.display = "none";
             }
         };
 
-        // When the user clicks on the confirm button, perform the confirmation
         confirmButton.onclick = function() {
-            // Add event listener to the form for submission
             document.getElementById("add-property-form").addEventListener("submit", function(event) {
-                event.preventDefault(); // Prevent the default form submission
+                event.preventDefault();
 
-                // Collect the form data
                 const formData = new FormData(this);
-                const landlordId = formData.get("landlord_id");
-                console.log(`sending landlord id is : ${landlordId}`)
                 const propertyName = formData.get("property_name");
-                console.log(`sending propertyName id is : ${propertyName}`)
                 const propertyDescription = formData.get("property_description");
-                console.log(`sending property description : ${propertyDescription}`)
-                
+                const landlordId = formData.get("landlord_id");
 
-                // Make the call to the backend to add the new user
                 fetch('/add-property', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        landlord_id: landlordId,
                         property_name: propertyName,
                         property_description: propertyDescription,
+                        landlord_id: landlordId
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Add the new user to the table
-                        const propertyTable = document.querySelector("#example tbody");
-                        if (propertyTable) {
-                            const newRow = document.createElement("tr");
-                            newRow.id = `property-${data.property.id}`;
-                            newRow.innerHTML = `
-                                <td>${data.property.id}</td>
-                                <td>${data.property.name}</td>
-                                <td>${data.property.description}</td>
-                                <td>${data.property.landlord_id}</td>
-                                <td>
-                                    <div class="table-button-container">
-                                        <a href="" class="table-button" hx-get="http://localhost:5000/landlord-property-units/${data.property.id}" hx-target="#dashboard-container" hx-swap="innerHTML" onclick="activateDashboardContainer()">Units</a>
-                                    </div>
-                                    <div class="table-button-container">
-                                        <button class="table-button" onclick="deleteProperty('${ data.property.id}')">Delete</button>
-                                    </div>
-                                </td>
-                            `;
-                            propertyTable.appendChild(newRow);
+                        // Reload property list dynamically with HTMX
+                        htmx.ajax('GET', `http://localhost:5000/landlord-properties/${landlordId}`, {target: '#dashboard-container', swap: 'innerHTML'});
 
-                            alert(`${data.message}`);
-                        }
-
-                        // Close the modal
+                        alert(`${data.message}`);
                         modal.style.display = "none";
                     } else {
-                        alert('Error: ' + data.message); // Show error alert
+                        alert('Error: ' + data.message);
                     }
                 })
                 .catch(error => {
-                    console.error('Error adding user:', error);
+                    console.error('Error adding property:', error);
                     alert('An error occurred while trying to add the property.');
                 });
+            });
+        }
+    }
 
-                
-                });
-                };
-            }
-
-        
-
+ 
     function deleteProperty(PropertyId){
         if (confirm('Are you sure you want to delete this property?')) {
             
