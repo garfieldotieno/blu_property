@@ -381,11 +381,15 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+
+                
                 // Update the UI: change button text to 'Download Receipt'
                 const buttonCell = document.querySelector(`#confirmation-${confirmationId} .table-button-container`);
                 if (buttonCell) {
                     buttonCell.innerHTML = `<a href="/download-receipt/${confirmationId}" class="table-button">Download Receipt</a>`;
                 }
+
+                
             } else {
                 console.error('Error clearing confirmation:', data.error);
             }

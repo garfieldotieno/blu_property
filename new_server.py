@@ -1018,12 +1018,15 @@ def clear_confirmation(confirmation_id):
     try:
         # Get the payment confirmation from the database
         confirmation = db_session.query(PaymentConfirmation).filter_by(id=confirmation_id).first()
+        print(f"fetched confirmation is : {confirmation}")
+        
         if not confirmation:
             return jsonify({'success': False, 'error': 'Confirmation not found'}), 404
 
         # Find the associated PaymentReminder
-        reminder = db_session.query(PaymentReminder).filter_by(lease_id=confirmation.lease_id).first()
+        reminder = db_session.query(PaymentReminder).filter_by(lease_id=confirmation.lease_id, id=confirmation.payment_reminder_id).first()
 
+        print(f"fetched reminder during clear-confirmation is {reminder.to_dict()}")
         if reminder:
             print(f"reminder found, and current payment_status is  : {reminder.payment_status}")
             # update the payment_reminder.payment_status if the reminder exists
