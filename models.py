@@ -272,7 +272,7 @@ class PaymentReminder(Base):
     lease_id = Column(Integer, ForeignKey('leases.id'))
     amount_due = Column(Float, nullable=False)
     due_date = Column(DateTime, nullable=False)
-    payment_status = Column(Boolean)
+    payment_status = Column(Boolean, default=False)
     payment_confirmation_issued = Column(Boolean, default=False)
 
     lease = relationship('Lease', back_populates='reminders')
@@ -291,6 +291,26 @@ class PaymentReminder(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+    @staticmethod
+    def create_reminder(payload):
+        pass 
+    
+    @staticmethod
+    def fetch_single_reminder(payload):
+        pass 
+    
+    @staticmethod
+    def fetch_all_reminders():
+         
+        pass
+
+    @staticmethod
+    def update_reminder(payload):
+        pass 
+    
+
+
     
 
 

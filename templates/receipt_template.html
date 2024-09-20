@@ -71,6 +71,12 @@
             padding: 5px;
             border-top: 1px dashed #000; /* Dashed line for footer section */
         }
+
+        /* Style for barcode */
+        #barcode {
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -144,6 +150,10 @@
             Otp Information: Otp: {{ otp_info.otp }}, Email: {{ otp_info.user_email }},
             Name: {{ otp_info.action_name }}, Active Up To: {{ otp_info.is_active_upto.strftime('%Y-%m-%d %H:%M:%S') }}
         </p>
+
+        
     </div>
+
+    
 </body>
 </html>

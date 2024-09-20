@@ -1,6 +1,7 @@
 from enum import unique
 import json
 from flask import Flask, render_template, request, abort, redirect, make_response, url_for, session, send_file, jsonify
+from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import os
@@ -27,6 +28,10 @@ import yaml
 import hashlib
 from random import choice
 import os
+
+import barcode
+from barcode.writer import ImageWriter
+
 
 
 app = Flask(__name__)
@@ -939,12 +944,19 @@ def add_reminder():
         db_session.add(new_reminder)
         db_session.commit()
 
+
+
         # Success message
-        return jsonify({
+
+        success_message =  {
             'success': True,
             'message': f"Payment reminder for Lease ID {lease_id} added successfully.",
             'reminder': new_reminder.to_dict()  # Assuming your model has a to_dict() method
-        })
+        }
+
+        print(f"created reminder message is : {success_message}")
+
+        return jsonify(success_message)
 
     except Exception as e:
         # Rollback the session in case of an error
@@ -962,6 +974,7 @@ def update_reminder(reminder_id):
     try:
         # Fetch the PaymentReminder by the given reminder_id
         reminder = db_session.query(PaymentReminder).get(reminder_id)
+        print(f"reminder id is : {reminder.id}")
         
         if not reminder:
             return jsonify({'success': False, 'error': 'Payment reminder not found'}), 404
@@ -974,6 +987,7 @@ def update_reminder(reminder_id):
         # Create a new PaymentConfirmation record
         new_payment_confirmation = PaymentConfirmation(
             lease_id=data.get('lease_id'),
+            payment_reminder_id=reminder.id,
             amount_paid=data.get('amount_paid'),
             payment_type=data.get('payment_type'),
             payment_refference=data.get('payment_refference'),  # Typo from frontend should be corrected if necessary
@@ -1003,7 +1017,7 @@ def clear_confirmation(confirmation_id):
     print(f"recieved confirmation id is : {confirmation_id}")
     try:
         # Get the payment confirmation from the database
-        confirmation = db_session.query(PaymentConfirmation).get(confirmation_id)
+        confirmation = db_session.query(PaymentConfirmation).filter_by(id=confirmation_id).first()
         if not confirmation:
             return jsonify({'success': False, 'error': 'Confirmation not found'}), 404
 
@@ -1011,7 +1025,7 @@ def clear_confirmation(confirmation_id):
         reminder = db_session.query(PaymentReminder).filter_by(lease_id=confirmation.lease_id).first()
 
         if reminder:
-            print(f"reminder found, and payment_status is  : {reminder.payment_status}")
+            print(f"reminder found, and current payment_status is  : {reminder.payment_status}")
             # update the payment_reminder.payment_status if the reminder exists
             reminder.payment_status = True
         else:
@@ -1022,6 +1036,7 @@ def clear_confirmation(confirmation_id):
         confirmation.payment_cleared = True
 
         # Commit the transaction
+        db_session.add_all([reminder,confirmation])
         db_session.commit()
 
         return jsonify({'success': True, 'confirmation_id': confirmation_id}), 200
@@ -1032,19 +1047,15 @@ def clear_confirmation(confirmation_id):
         print(f"Error in clearing confirmation: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
-
 @app.route('/download-receipt/<int:confirmation_id>')
 def download_receipt(confirmation_id):
-    
     # Fetch the confirmation record
     confirmation = db_session.get(PaymentConfirmation, confirmation_id)
     if not confirmation:
         return jsonify({'error': 'Payment confirmation not found'}), 404
 
-    # Check if a receipt already exists for the given confirmation_id
+    # Fetch the receipt or generate a new one
     existing_receipt = db_session.query(Receipt).filter_by(confirmation_id=confirmation_id).first()
-
     existing_lease = db_session.query(Lease).filter_by(id=confirmation.lease_id).first()
     existing_user = db_session.query(User).filter_by(id=existing_lease.tenant_id).first()
 
@@ -1054,7 +1065,7 @@ def download_receipt(confirmation_id):
         return ''.join(choice(characters) for _ in range(length))
 
     if not existing_receipt:
-        # If no receipt exists, create a new one with an alpha-numeric receipt number
+        # Create a new receipt if one doesn't exist
         receipt_number = f"REC-{generate_alpha_numeric(4)}-{confirmation.id}"
 
         new_receipt = Receipt(
@@ -1063,33 +1074,57 @@ def download_receipt(confirmation_id):
             lease_id=confirmation.lease_id,
             amount=confirmation.amount_paid,
             description=confirmation.Payment_description,
-            receipt_date=confirmation.created_at  # Alternatively, use current timestamp here
+            receipt_date=confirmation.created_at  # or use current datetime
         )
 
-        # Generate OTP code (assuming this function exists)
-        otp_code = generate_otp_code()
-        
-        # Create OTP record
+        otp_code = generate_otp_code()  # Assuming this function is defined elsewhere
+
         otp_record = Otp(
-            user_email=existing_user.email_or_phone,  # Ensure correct value (email or phone)
+            user_email=existing_user.email_or_phone,
             action_name='PDF Generation',
             action_url=f'/download-receipt/{confirmation_id}',
-            is_active_upto=datetime.utcnow() + timedelta(days=30),  # Fix the lambda
+            is_active_upto=datetime.utcnow() + timedelta(days=30),
             user_type="tenant",
             otp=otp_code
         )
-        
-        # Add and commit the new receipt and OTP record to the database
+
+        # Save new receipt and OTP to the database
         db_session.add(new_receipt)
         db_session.add(otp_record)
         db_session.commit()
     else:
-        # Use the existing receipt for PDF generation
+        # Use the existing receipt
         otp_record = db_session.query(Otp).filter_by(user_email=existing_user.email_or_phone).first()
         new_receipt = existing_receipt
 
-    # Render HTML template with confirmation and receipt data
-    rendered_html = render_template('receipt_template.html', confirmation=confirmation, receipt=new_receipt, otp_info=otp_record, existing_user=existing_user)
+    # Barcode generation
+    random_number = generate_otp_code() + generate_otp_code()
+    
+    # Ensure the barcode directory exists
+    barcode_dir = os.path.join(current_app.root_path, 'static/barcodes/')
+    if not os.path.exists(barcode_dir):
+        os.makedirs(barcode_dir)
+
+    # Generate the barcode file path
+    barcode_filename = f'{random_number}.png'
+    barcode_path = os.path.join(barcode_dir, barcode_filename)
+    
+    # Generate and save the barcode
+    ean = barcode.get('ean13', random_number, writer=ImageWriter())
+    ean.save(barcode_path)
+
+    # Generate full filesystem path to the barcode for PDF generation
+    barcode_abs_path = os.path.join(current_app.root_path, 'static', 'barcodes', barcode_filename)
+
+    # Render the receipt template with the required data
+    rendered_html = render_template(
+        'receipt_template.html',
+        confirmation=confirmation,
+        receipt=new_receipt,
+        otp_info=otp_record,
+        existing_user=existing_user,
+        barcode_path=barcode_abs_path  # Pass the absolute path to the template
+    )
 
     # Convert HTML to PDF
     buffer = BytesIO()
@@ -1101,7 +1136,7 @@ def download_receipt(confirmation_id):
     # Move the buffer's position to the start
     buffer.seek(0)
 
-    # Return the generated PDF as a response
+    # Return the generated PDF
     return send_file(buffer, as_attachment=True, download_name=f"Receipt_{new_receipt.receipt_number}.pdf", mimetype='application/pdf')
 
 
@@ -1118,7 +1153,7 @@ def get_all_reminders():
 @app.route('/admin-all-payment-confirmations')
 def get_all_confirmations():
     confirmations = db_session.query(PaymentConfirmation).all()
-    return render_template('admin_confirmations.html', confirmations=confirmations, header_title="Payment Confiromations") 
+    return render_template('admin_confirmations.html', confirmations=confirmations, header_title="Payment Confirmations") 
 
 
 @app.route('/generate-reminders-report', methods=['POST'])
